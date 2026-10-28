@@ -132,22 +132,20 @@ pnpm typecheck
 
 ## 在 ZCode 里使用 TriBot 的 Bot
 
-TriBot 的五个角色也打包成了 ZCode 可加载的 `SKILL.md`，放在 [`zcode-skills/`](zcode-skills/)：
+TriBot 的五个角色合并成了一个 ZCode 技能，放在 [`zcode-skills/tribot/`](zcode-skills/tribot/)：
 
 ```bash
-cp -R zcode-skills/* ~/.zcode/skills/
+cp -R zcode-skills/tribot ~/.zcode/skills/
 ```
 
-| 技能 | 角色 |
-|---|---|
-| `tribot-team` | 团队编排 |
-| `tribot-dispatcher` | 总管 |
-| `tribot-researcher` | 研究员 |
-| `tribot-engineer` | 工程师 |
-| `tribot-steward` | 管家 |
-| `tribot-reviewer` | 审稿人 |
+加载 `tribot` 后会先让你选角色：
 
-安装后在 ZCode 的 **Settings → Skills** 或 `/` 菜单里加载即可。它们只是指令，不含可执行代码或 API Key。详见 [zcode-skills/README.md](zcode-skills/README.md)。
+```
+1. 🧭 总管   2. 🔍 研究员   3. 🛠 工程师
+4. ⏰ 管家   5. 🧪 审稿人   6. 👥 团队
+```
+
+回复编号或名字即可；也可以直接说「用工程师」。技能只是指令，不含可执行代码或 API Key。详见 [zcode-skills/README.md](zcode-skills/README.md)。
 
 ## License
 
