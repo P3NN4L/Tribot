@@ -23,7 +23,8 @@ await build({
   format: 'cjs',
   platform: 'browser',
   target: ['es2022'],
-  external: dshExternal,
+  jsx: 'automatic',
+  external: [...dshExternal, 'react', 'react-dom', 'react/jsx-runtime', 'scheduler'],
   banner: {
     js: "window.__ModuleLoader__.load({ id: 'dsh-tribot-role-picker', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
   },

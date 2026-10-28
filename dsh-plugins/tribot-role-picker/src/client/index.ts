@@ -6,8 +6,9 @@
  * the role name is visible in the message. No RPC, no host state.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { RoleDock } from './RoleDock'
 
-export const inject = ['inputTriggers']
+export const inject = ['inputTriggers', 'slots']
 
 interface Role {
   id: string
@@ -61,4 +62,25 @@ export function apply(ctx: Context): void {
       }),
     'tribot-role-picker: # source',
   )
+
+  const slots = (ctx as unknown as {
+    slots?: {
+      inject(name: string, factory: () => unknown): unknown
+      register(entry: object, component: unknown): unknown
+    }
+  }).slots
+  if (slots?.inject) {
+    slots.inject('conversation.input.dock', () =>
+      slots.register(
+        {
+          name: 'conversation.input.dock',
+          id: 'tribot-role-picker',
+          order: 30,
+        },
+        RoleDock,
+      ),
+    )
+  } else {
+    console.warn('[tribot-role-picker] slots service is unavailable')
+  }
 }

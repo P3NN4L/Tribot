@@ -1,142 +1,194 @@
-# TriBot 路 鏈湴 Bot 鍥㈤槦宸ヤ綔鍙?
-鎶婁换鍔′涪缁欎竴鏀窇鍦ㄨ嚜宸辩數鑴戜笂鐨?Bot 鍥㈤槦锛氭€荤鎷嗚В銆佺爺绌跺憳鏌ヨ瘉銆佸伐绋嬪笀鍔ㄦ墜銆佺瀹跺贰妫€銆佸绋夸汉鎸戝埡銆傛ā鍨嬨€佸伐鍏枫€佹枃浠躲€佸鎵归兘鍦ㄦ湰鏈猴紝鏁版嵁涓嶅嚭闂ㄣ€?
-![TriBot 涓荤晫闈(docs/screenshots/app.png)
+# TriBot · 本地 Bot 团队工作台
 
-## 瀹冩槸浠€涔?
-TriBot 涓嶆槸鈥滃張涓€涓亰澶╂鈥濓紝鑰屾槸涓€涓彲瀹¤鐨勬湰鍦?Agent 宸ヤ綔鍙帮細
+把任务丢给一支跑在自己电脑上的 Bot 团队：总管拆解、研究员查证、工程师动手、管家巡检、审稿人挑刺。模型、工具、文件、审批都在本机，数据不出门。
 
-- **浜斾釜瑙掕壊**锛氭€荤 / 鐮旂┒鍛?/ 宸ョ▼甯?/ 绠″ / 瀹＄浜猴紝鍚勬湁绯荤粺鎻愮ず璇嶃€佽緭鍑哄绾﹀拰榛樿鎬濊€冩。浣?- **宸ヤ綔鍖?*锛氫竴涓細璇濈粦瀹氫竴涓洰褰曪紝鍙拷鍔犲涓洰褰曪紱宸︿晶鎸夊伐浣滃尯鍒嗙粍锛屽儚鏂囦欢澶逛竴鏍峰睍寮€/鏀惰捣
-- **鏂囦欢渚ф爮**锛氱洿鎺ュ湪宸︿晶銆屾枃浠躲€峵ab 娴忚宸ヤ綔鍖猴紝Markdown / 浠ｇ爜 / 鍥剧墖 / PDF 鍦ㄥ彸渚ч瑙?- **浼氳瘽鏍囩椤?*锛氬儚鏂囦欢涓€鏍锋墦寮€銆佸垏鎹€佸叧闂紱鍏抽棴鏍囩涓嶅垹闄や細璇?- **鍐欏墠妫€鏌ョ偣**锛欱ot 瑕嗙洊/鏂板缓鏂囦欢鍓嶈嚜鍔ㄥ揩鐓э紝鍙充晶銆岀姸鎬併€嶉潰鏉垮彲閫愭枃浠跺洖婊?- **瀹℃壒涓庢矙绠?*锛氬彧璇?/ 宸ヤ綔鍖?/ 鍏ㄦ潈涓夋。锛涢珮鍗卞懡浠ゃ€佸缃戙€丮CP 璋冪敤閫愭瀹℃壒
-- **鐪熷疄宸ュ叿**锛氳鍐欐枃浠躲€佹墽琛屽懡浠ゃ€佹祻瑙堝櫒銆佹闈㈣嚜鍔ㄥ寲銆丮CP銆丼KILL.md 鎶€鑳姐€佸畾鏃朵换鍔?- **鐢ㄩ噺閫忔槑**锛氫笂杞?鏈細璇?token銆佺紦瀛樺懡涓巼锛涜缃噷鏈夋寜妯″瀷鐨勯ゼ鍥?- **澶氫緵搴斿晢**锛欸LM銆丮iniMax銆丏eepSeek 鍐呯疆锛涗换鎰?OpenAI 鍏煎渚涘簲鍟嗗彲鑷繁鍔?
-![鏂囦欢渚ф爮涓?Markdown 棰勮](docs/screenshots/files.png)
+![TriBot 主界面](docs/screenshots/app.png)
 
-## 鐪?token 鍋氫簡浠€涔?
-TriBot 鐨勫彇鑸嶆槸銆屽浐瀹氬墠缂€灏?+ 闀垮唴瀹逛笉纭銆嶃€傚疄娴嬶紙cl100k_base锛岀湡瀹炰粨搴撴枃浠?/ 鐪熷疄 Bot 閰嶇疆 / 鐪熷疄宸ュ叿 Schema锛夛細
+## 它是什么
 
-| 鍦烘櫙 | 涓嶅鐞?| TriBot | 鐪?|
+TriBot 不是“又一个聊天框”，而是一个可审计的本地 Agent 工作台：
+
+- **五个角色**：总管 / 研究员 / 工程师 / 管家 / 审稿人，各有系统提示词、输出契约和默认思考档位
+- **工作区**：一个会话绑定一个目录，可追加多个目录；左侧按工作区分组，像文件夹一样展开/收起
+- **文件侧栏**：直接在左侧「文件」tab 浏览工作区，Markdown / 代码 / 图片 / PDF 在右侧预览
+- **会话标签页**：像文件一样打开、切换、关闭；关闭标签不删除会话
+- **写前检查点**：Bot 覆盖/新建文件前自动快照，右侧「状态」面板可逐文件回滚
+- **审批与沙箱**：只读 / 工作区 / 全权三档；高危命令、外网、MCP 调用逐次审批
+- **真实工具**：读写文件、执行命令、浏览器、桌面自动化、MCP、SKILL.md 技能、定时任务
+- **用量透明**：上轮/本会话 token、缓存命中率；设置里有按模型的饼图
+- **多供应商**：GLM、MiniMax、DeepSeek 内置；任意 OpenAI 兼容供应商可自己加
+
+![文件侧栏与 Markdown 预览](docs/screenshots/files.png)
+
+## 省 token 做了什么
+
+TriBot 的取舍是「固定前缀小 + 长内容不硬塞」。实测（cl100k_base，真实仓库文件 / 真实 Bot 配置 / 真实工具 Schema）：
+
+| 场景 | 不处理 | TriBot | 省 |
 |---|---:|---:|---:|
-| 鍥哄畾鍓嶇紑锛坰ystem + 17 涓伐鍏?Schema + 30 涓妧鑳藉悕锛?| 鈥?| **2,731 tokens** | Claude Code 绾?12,200 |
-| 璇?3,705 琛?`pnpm-lock.yaml` | 56.2k | 1.1k | **98.1%** |
-| `cat` 鎵撳寘浜х墿锛?1,158 琛岋級 | 615.3k | 626 | **99.9%** |
-| 40 鏉″巻鍙插璇濆帇缂?| 12.7k | 5.2k | **58.8%** |
-| 30 杞?+ 3 娆″ぇ杈撳嚭 + 6 娆￠噸澶嶈皟鐢?| 849.4k | 99.3k | **88.3%**锛埪?.425 鈫?楼0.050锛?|
+| 固定前缀（system + 17 个工具 Schema + 30 个技能名） | — | **2,731 tokens** | Claude Code 约 12,200 |
+| 读 3,705 行 `pnpm-lock.yaml` | 56.2k | 1.1k | **98.1%** |
+| `cat` 打包产物（61,158 行） | 615.3k | 626 | **99.9%** |
+| 40 条历史对话压缩 | 12.7k | 5.2k | **58.8%** |
+| 30 轮 + 3 次大输出 + 6 次重复调用 | 849.4k | 99.3k | **88.3%**（¥0.425 → ¥0.050） |
 
-鍏蜂綋鏈哄埗锛?
-1. **闀垮伐鍏疯緭鍑鸿惤鐩?*锛氳秴杩?6,000 瀛楃涓嶆暣娈靛鍥炰笂涓嬫枃锛屽彧鍥炲～澶?1,800 + 灏?300 瀛楃锛岀粰妯″瀷涓€涓?`expand_output(id)` 璇诲洖鍘熸枃鐨勬妸鎵嬨€傛棦涓嶇垎绐楀彛锛屼篃涓嶄涪淇℃伅銆?2. **鍒嗘璇绘枃浠?*锛歚read_file` 榛樿鏈€澶?2,000 琛?/ 200KB锛岄暱鏂囦欢鐢?`offset/limit` 缈婚〉锛岃€屼笉鏄竴鍙ｆ皵鐏岃繘鍘汇€?3. **涓婁笅鏂囧帇缂?*锛氶暱浼氳瘽淇濈暀鏈€杩戞秷鎭?+ 鎽樿锛涘帇缂╁悗鐨勫師鏂囦粛鍙粠宸ュ叿杈撳嚭瀛樻。璇诲洖銆?4. **绋冲畾鍓嶇紑鍚冪紦瀛?*锛氱郴缁熸彁绀烘寜銆屼汉璁?鈫?鎶€鑳?鈫?浠诲姟鍗?鈫?鎽樿 鈫?鏃堕棿/鐜銆嶆帓搴忥紝鎶婃瘡鍒嗛挓鍙樺寲鐨勬椂闂存埑鏀惧埌鏈€鍚庯紝璁╁杞姹傜殑鍓嶇紑灏介噺涓嶅彉锛?0 杞疄娴嬬紦瀛樺啀鐪?44.5%銆?5. **閲嶅璋冪敤鎻愰啋**锛氬悓涓€宸ュ叿 + 鍚屼竴鍙傛暟绗?3/5/8 娆¤皟鐢ㄦ椂鎻愰啋鎹㈡€濊矾锛屽噺灏戝師鍦版墦杞儳 token銆?
-> 杩欎簺鏁板瓧鏉ヨ嚜鏈粨搴撶殑 `pnpm bench` 瀹炴祴锛屼笉鏄惀閿€浼扮畻锛涗笉鍚?tokenizer / 渚涘簲鍟嗕細鏈?卤10% 宸紓銆傚畬鏁存暟鎹笌澶嶇幇鏂瑰紡瑙?[docs/token-benchmark.md](docs/token-benchmark.md)锛岀珵鍝佸姣旇 [docs/positioning.md](docs/positioning.md)銆?
-## 蹇€熷紑濮?
-瑕佹眰锛?*Node.js >= 22.5**銆?*pnpm >= 10**锛堜粨搴撲娇鐢?pnpm 12.6锛夈€?
+具体机制：
+
+1. **长工具输出落盘**：超过 6,000 字符不整段塞回上下文，只回填头 1,800 + 尾 300 字符，给模型一个 `expand_output(id)` 读回原文的把手。既不爆窗口，也不丢信息。
+2. **分段读文件**：`read_file` 默认最多 2,000 行 / 200KB，长文件用 `offset/limit` 翻页，而不是一口气灌进去。
+3. **上下文压缩**：长会话保留最近消息 + 摘要；压缩后的原文仍可从工具输出存档读回。
+4. **稳定前缀吃缓存**：系统提示按「人设 → 技能 → 任务卡 → 摘要 → 时间/环境」排序，把每分钟变化的时间戳放到最后，让多轮请求的前缀尽量不变；30 轮实测缓存再省 44.5%。
+5. **重复调用提醒**：同一工具 + 同一参数第 3/5/8 次调用时提醒换思路，减少原地打转烧 token。
+
+> 这些数字来自本仓库的 `pnpm bench` 实测，不是营销估算；不同 tokenizer / 供应商会有 ±10% 差异。完整数据与复现方式见 [docs/token-benchmark.md](docs/token-benchmark.md)，竞品对比见 [docs/positioning.md](docs/positioning.md)。
+
+## 快速开始
+
+要求：**Node.js >= 22.5**、**pnpm >= 10**（仓库使用 pnpm 12.6）。
+
 ```bash
 pnpm install
 pnpm dev
 ```
 
-棣栨鍚姩锛?
-1. 涓夋寮曞锛堜粙缁?鈫?閰嶇疆妯″瀷 鈫?閫変换鍔℃枃浠跺す锛?2. 鍒?**璁剧疆 鈫?妯″瀷涓庡嚟璇?* 濉?API Key锛堟帹鑽愶紱Key 鍙瓨鍦ㄦ湰鏈猴級
-3. 鏂板缓浼氳瘽锛岀洿鎺ユ妸浠诲姟涓㈢粰鎬荤
+首次启动：
 
-鍙惎鍔ㄦ湰鍦?server锛?
+1. 三步引导（介绍 → 配置模型 → 选任务文件夹）
+2. 到 **设置 → 模型与凭证** 填 API Key（推荐；Key 只存在本机）
+3. 新建会话，直接把任务丢给总管
+
+只启动本地 server：
+
 ```bash
 pnpm dev:server
-# 娴忚鍣ㄦ墦寮€ http://127.0.0.1:47615/
+# 浏览器打开 http://127.0.0.1:47615/
 ```
 
-> 浠撳簱**涓嶅寘鍚换浣?API Key**銆俙data/`銆乣.env`銆乣credentials.json` 绛夊潎琚?`.gitignore` 鎺掗櫎銆?
-## 甯哥敤鍛戒护
+> 仓库**不包含任何 API Key**。`data/`、`.env`、`credentials.json` 等均被 `.gitignore` 排除。
 
-| 鍛戒护 | 浣滅敤 |
+## 常用命令
+
+| 命令 | 作用 |
 |---|---|
-| `pnpm dev` | 妗岄潰 App锛圗lectron + 鏈湴 server锛?|
-| `pnpm dev:server` | 鍙惎鍔ㄦ湰鍦?server锛屾祻瑙堝櫒璁块棶 |
-| `pnpm dev:web` | 鍙惎鍔?Vite 娓叉煋灞?|
-| `pnpm test` | 鍏ㄩ儴鍗曟祴 |
-| `pnpm typecheck` | 鍏ㄤ粨绫诲瀷妫€鏌?|
-| `pnpm cli -- chat` | 鍛戒护琛岃亰澶╋紙`tb`锛?|
-| `pnpm package` | Windows Electron 渚挎惡鐗?鈫?`release/` |
-| `pnpm package:native` | Windows 鍘熺敓澹筹紙C# + WebView2锛夆啋 `release/TriBotNative` |
-| `pnpm package:targets` | 鐢熸垚涓嬭浇绔欎骇鐗╋紙Windows / macOS / Linux锛?|
+| `pnpm dev` | 桌面 App（Electron + 本地 server） |
+| `pnpm dev:server` | 只启动本地 server，浏览器访问 |
+| `pnpm dev:web` | 只启动 Vite 渲染层 |
+| `pnpm test` | 全部单测 |
+| `pnpm typecheck` | 全仓类型检查 |
+| `pnpm cli -- chat` | 命令行聊天（`tb`） |
+| `pnpm package` | Windows Electron 便携版 → `release/` |
+| `pnpm package:native` | Windows 原生壳（C# + WebView2）→ `release/TriBotNative` |
+| `pnpm package:targets` | 生成下载站产物（Windows / macOS / Linux） |
 
-## 鏋舵瀯
+## 架构
 
 ```
 packages/
-鈹溾攢鈹€ core/     寮曟搸锛氭ā鍨嬬綉鍏炽€佽矾鐢便€侀厤棰濄€佸伐鍏锋墽琛屻€佸鎵归棬銆佹矙绠便€?鈹?            涓婁笅鏂囧帇缂┿€丼KILL.md銆丮CP銆丷outine
-鈹溾攢鈹€ server/   Fastify REST + SSE锛屽彧鐩戝惉 127.0.0.1
-鈹溾攢鈹€ app/      Electron 涓昏繘绋?+ React 宸ヤ綔鍙?+ 鍘熺敓澹宠祫婧?鈹溾攢鈹€ cli/      tb 鍛戒护琛岋紙闆朵緷璧?HTTP 瀹㈡埛绔級
-鈹斺攢鈹€ shared/   涓夌鍏变韩绫诲瀷涓庡崗璁?shell/        Windows C# + WebView2 鍘熺敓澹?/ macOS路Linux Python + 绯荤粺 WebView
-site/         闈欐€佷笅杞介〉
-scripts/      鎵撳寘銆佸熀鍑嗐€佽瘎娴?docs/         瀹夊叏銆佽鑹层€佽璁°€佸師鐢熷３璇存槑
+├── core/     引擎：模型网关、路由、配额、工具执行、审批门、沙箱、
+│             上下文压缩、SKILL.md、MCP、Routine
+├── server/   Fastify REST + SSE，只监听 127.0.0.1
+├── app/      Electron 主进程 + React 工作台 + 原生壳资源
+├── cli/      tb 命令行（零依赖 HTTP 客户端）
+└── shared/   三端共享类型与协议
+shell/        Windows C# + WebView2 原生壳 / macOS·Linux Python + 系统 WebView
+site/         静态下载页
+scripts/      打包、基准、评测
+docs/         安全、角色、设计、原生壳说明
 ```
 
-鏁版嵁娴侊細
+数据流：
 
 ```
-UI 鈫?鏈湴 server(127.0.0.1) 鈫?寮曟搸锛堣矾鐢?/ 宸ュ叿寰幆 / 瀹℃壒锛?   鈫?SQLite(data/tribot.db) + 宸ヤ綔鍖烘枃浠?+ 鍑瘉瀵嗘枃
+UI → 本地 server(127.0.0.1) → 引擎（路由 / 工具循环 / 审批）
+   → SQLite(data/tribot.db) + 工作区文件 + 凭证密文
 ```
 
-## 浼氳瘽涓庡伐浣滃尯
+## 会话与工作区
 
-- 浼氳瘽鎸夊伐浣滃尯鍒嗙粍锛涙枃浠跺す澶?`+` 鐩存帴鍦ㄨ宸ヤ綔鍖烘柊寤轰細璇?- 浼氳瘽鏍囬鍦ㄩ杞悗鐢辨ā鍨嬫€荤粨鐢熸垚锛屼笉鍐嶆埅鍙栫涓€鍙ヨ瘽锛涘弻鍑绘垨鍙抽敭鍙噸鍛藉悕
-- 鑷畾涔夋爣棰樺啓鍏?`meta.titleSource = custom`锛屼箣鍚庝笉浼氳鑷姩瑕嗙洊
-- 浼氳瘽鏍囩椤垫寔涔呭寲锛涘叧闂爣绛惧彧鍏宠鍥撅紝涓嶅垹浼氳瘽
+- 会话按工作区分组；文件夹头 `+` 直接在该工作区新建会话
+- 会话标题在首轮后由模型总结生成，不再截取第一句话；双击或右键可重命名
+- 自定义标题写入 `meta.titleSource = custom`，之后不会被自动覆盖
+- 会话标签页持久化；关闭标签只关视图，不删会话
 
-## 瀹夊叏
+## 安全
 
-- API Key 浣跨敤 **AES-256-GCM** 鍔犲瘑瀛?`data/credentials.json`
-- 妗岄潰鐗堜富瀵嗛挜鐢辩郴缁?DPAPI / Keychain锛圗lectron safeStorage锛変繚鎶わ紱绾?Node 妯″紡鐢ㄦ湰鏈?`.localkey` 鍏滃簳
-- 鐣岄潰鍙洖鏄?`鈥﹀熬鍙穈锛屼笉杩斿洖瀹屾暣 Key
-- 鏈嶅姟鍙粦瀹?`127.0.0.1`
-- 鏂囦欢璇诲啓閿佸湪浼氳瘽宸ヤ綔鍖哄唴锛涜矾寰勮秺鐣岀洿鎺ユ嫆缁?- 楂樺嵄鍔ㄤ綔閫愭瀹℃壒锛屾巿鏉冨彲闄愬畾銆屾湰浼氳瘽 / 鎬绘槸銆嶏紝璁剧疆閲屽彲鎾ら攢
-- 鍙戝竷鍖呬笉鍖呭惈 `data/`銆乣.env`銆乣credentials.json`
+- API Key 使用 **AES-256-GCM** 加密存 `data/credentials.json`
+- 桌面版主密钥由系统 DPAPI / Keychain（Electron safeStorage）保护；纯 Node 模式用本机 `.localkey` 兜底
+- 界面只回显 `…尾号`，不返回完整 Key
+- 服务只绑定 `127.0.0.1`
+- 文件读写锁在会话工作区内；路径越界直接拒绝
+- 高危动作逐次审批，授权可限定「本会话 / 总是」，设置里可撤销
+- 发布包不包含 `data/`、`.env`、`credentials.json`
 
-瀹屾暣璇存槑锛歔docs/security.md](docs/security.md)
+完整说明：[docs/security.md](docs/security.md)
 
-## 鍘熺敓澹筹紙涓嶇敤 Electron锛?
-| 骞冲彴 | 瀹炵幇 | 鐘舵€?|
+## 原生壳（不用 Electron）
+
+| 平台 | 实现 | 状态 |
 |---|---|---|
-| Windows | C# WinForms + WebView2锛屽師鐢熸爣棰樻爮 | 宸叉瀯寤?|
-| macOS | Python + WKWebView | 婧愮爜鍖?|
-| Linux | Python + WebKitGTK | 婧愮爜鍖?|
+| Windows | C# WinForms + WebView2，原生标题栏 | 已构建 |
+| macOS | Python + WKWebView | 源码包 |
+| Linux | Python + WebKitGTK | 源码包 |
 
 ```bash
 pnpm package:native
 # release/TriBotNative/TriBotShell.exe
 ```
 
-macOS / Linux 闇€瑕佸悇鑷钩鍙扮紪璇戜笌绛惧悕锛屼粨搴撴彁渚?`shell/tribot_shell.py` 涓庡畨瑁呰鏄庛€傝瑙?[docs/native-shell.md](docs/native-shell.md)銆?
-## 娴嬭瘯涓庤川閲?
+macOS / Linux 需要各自平台编译与签名，仓库提供 `shell/tribot_shell.py` 与安装说明。详见 [docs/native-shell.md](docs/native-shell.md)。
+
+## 测试与质量
+
 ```bash
-pnpm test        # 165+ 鍗曟祴锛氳矾鐢?娌欑/瀹℃壒/鍑瘉/鍘嬬缉/宸ュ叿/妫€鏌ョ偣
+pnpm test        # 165+ 单测：路由/沙箱/审批/凭证/压缩/工具/检查点
 pnpm typecheck
 ```
 
-鍏抽敭璁捐锛?
-- 鎵€鏈?Bot 榛樿鎷ユ湁鍏ㄩ儴宸ュ叿锛坄["*","assign"]`锛夛紝椋庨櫓鐢辨矙绠变笌瀹℃壒鍏滃簳
-- 鍐欐枃浠跺墠鍏?`read_file`锛岄伩鍏嶇洸鍐欒鐩?- 宸ュ叿杈撳嚭杩囬暱鑷姩钀界洏锛屾ā鍨嬪彲鐢?`expand_output` 璇诲洖
-- 鍚屼竴宸ュ叿閲嶅璋冪敤浼氭彁閱掓崲鎬濊矾
-- 杈撳嚭鎴柇鑷姩缁啓锛屼笉浼氱洿鎺ュけ璐?
-## 鍦?ZCode / DSH 閲屼娇鐢?TriBot 鐨?Bot
+关键设计：
 
-TriBot 鐨勪簲涓鑹插悎骞舵垚浜嗕竴涓妧鑳斤紝婧愭枃浠跺湪 [`zcode-skills/tribot/SKILL.md`](zcode-skills/tribot/SKILL.md)銆俍Code 鍜?DSH 鍏辩敤鍚屼竴浠藉唴瀹癸紙鍚屾椂鍐欎簡 `when_to_use` 涓?`whenToUse`锛夈€?
+- 所有 Bot 默认拥有全部工具（`["*","assign"]`），风险由沙箱与审批兜底
+- 写文件前先 `read_file`，避免盲写覆盖
+- 工具输出过长自动落盘，模型可用 `expand_output` 读回
+- 同一工具重复调用会提醒换思路
+- 输出截断自动续写，不会直接失败
+
+## DSH 角色选择器
+
+DSH 里装一个客户端插件后，输入框上方会多一个 **「选择 Bot 角色」** 胶囊，点开即可选：
+
+```
+TriBot  [ 选择 Bot 角色 ▾ ]
+    → 总管 / 研究员 / 工程师 / 管家 / 审稿人 / 团队
+```
+
+选完自动插入 `/tribot 工程师 `；也保留 `#` 快捷键。源码：[`dsh-plugins/tribot-role-picker`](dsh-plugins/tribot-role-picker/)。这是 DSH 客户端插件，不依赖 `SKILL.md` 的菜单。
+
+## 在 ZCode / DSH 里使用 TriBot 的 Bot
+
+TriBot 的五个角色合并成了一个技能，源文件在 [`zcode-skills/tribot/SKILL.md`](zcode-skills/tribot/SKILL.md)。ZCode 和 DSH 共用同一份内容（同时写了 `when_to_use` 与 `whenToUse`）。
+
 **ZCode**
 
 ```bash
 cp -R zcode-skills/tribot ~/.zcode/skills/
 ```
 
-**DSH锛圖eepSeek Harness锛?*
+**DSH（DeepSeek Harness）**
 
 ```bash
 cp -R zcode-skills/tribot ~/.dsh/skills/
 ```
 
-鍔犺浇 `tribot` 鍚庝細鍏堣浣犻€夎鑹诧細
+加载 `tribot` 后会先让你选角色：
 
 ```
-1. 馃Л 鎬荤   2. 馃攳 鐮旂┒鍛?  3. 馃洜 宸ョ▼甯?4. 鈴?绠″   5. 馃И 瀹＄浜?  6. 馃懃 鍥㈤槦
+1. 🧭 总管   2. 🔍 研究员   3. 🛠 工程师
+4. ⏰ 管家   5. 🧪 审稿人   6. 👥 团队
 ```
 
-鍥炲缂栧彿鎴栧悕瀛楀嵆鍙紱涔熷彲浠ョ洿鎺ヨ銆岀敤宸ョ▼甯堛€嶃€傛妧鑳藉彧鏄寚浠わ紝涓嶅惈鍙墽琛屼唬鐮佹垨 API Key銆?璇﹁ [zcode-skills/README.md](zcode-skills/README.md) 鍜?[dsh-skills/README.md](dsh-skills/README.md)銆?
+回复编号或名字即可；也可以直接说「用工程师」。技能只是指令，不含可执行代码或 API Key。
+详见 [zcode-skills/README.md](zcode-skills/README.md) 和 [dsh-skills/README.md](dsh-skills/README.md)。
+
 ## License
 
-MIT 漏 2026 Zhanjian Li銆傝 [LICENSE](LICENSE)銆?
+MIT © 2026 Zhanjian Li。见 [LICENSE](LICENSE)。
