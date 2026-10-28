@@ -6,6 +6,7 @@
  * the role name is visible in the message. No RPC, no host state.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { setPluginManager } from './pm'
 import { isPickerEnabled, RoleDock } from './RoleDock'
 import { NS, en, zh } from './locales'
 import { adoptStyles } from './styles'
@@ -34,6 +35,13 @@ export function apply(ctx: Context): void {
   }).locale
   if (locale?.register) {
     ctx.effect(() => locale.register(NS, { zh, en }), 'tribot-role-picker: dictionaries')
+  }
+
+  // 物理开关通道：DSH 内置 plugin-manager 的 client RPC（setBundleEnabled）
+  try {
+    setPluginManager((ctx as any)?.reflect?.get?.('remote.pluginManager'))
+  } catch {
+    setPluginManager(undefined)
   }
 
   const inputTriggers = ctx.get('inputTriggers') as
