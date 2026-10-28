@@ -130,6 +130,25 @@ pnpm typecheck
 - 同一工具重复调用会提醒换思路
 - 输出截断自动续写，不会直接失败
 
+## 在 ZCode 里使用 TriBot 的 Bot
+
+TriBot 的五个角色也打包成了 ZCode 可加载的 `SKILL.md`，放在 [`zcode-skills/`](zcode-skills/)：
+
+```bash
+cp -R zcode-skills/* ~/.zcode/skills/
+```
+
+| 技能 | 角色 |
+|---|---|
+| `tribot-team` | 团队编排 |
+| `tribot-dispatcher` | 总管 |
+| `tribot-researcher` | 研究员 |
+| `tribot-engineer` | 工程师 |
+| `tribot-steward` | 管家 |
+| `tribot-reviewer` | 审稿人 |
+
+安装后在 ZCode 的 **Settings → Skills** 或 `/` 菜单里加载即可。它们只是指令，不含可执行代码或 API Key。详见 [zcode-skills/README.md](zcode-skills/README.md)。
+
 ## License
 
 MIT © 2026 Zhanjian Li。见 [LICENSE](LICENSE)。
