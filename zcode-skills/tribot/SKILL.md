@@ -2,8 +2,8 @@
 name: tribot
 description: 当你需要从 TriBot 的五个 Bot 角色中选一个来工作时使用（总管 / 研究员 / 工程师 / 管家 / 审稿人），或需要一支分工明确的 Bot 团队。技能会先让你选角色，再加载对应的方法论、质量门槛和输出契约。
 when_to_use: 用户说“用 TriBot”“选一个 Bot”“让总管/研究员/工程师/管家/审稿人来做”，或任务需要拆解、调研、工程实现、巡检、审稿中的一种明确角色时。
+whenToUse: 用户说“用 TriBot”“选一个 Bot”“让总管/研究员/工程师/管家/审稿人来做”，或任务需要拆解、调研、工程实现、巡检、审稿中的一种明确角色时。
 license: MIT
-metadata: roles=dispatcher,researcher,engineer,steward,reviewer; source=TriBot
 ---
 
 # TriBot · 选一个 Bot

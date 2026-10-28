@@ -130,12 +130,20 @@ pnpm typecheck
 - 同一工具重复调用会提醒换思路
 - 输出截断自动续写，不会直接失败
 
-## 在 ZCode 里使用 TriBot 的 Bot
+## 在 ZCode / DSH 里使用 TriBot 的 Bot
 
-TriBot 的五个角色合并成了一个 ZCode 技能，放在 [`zcode-skills/tribot/`](zcode-skills/tribot/)：
+TriBot 的五个角色合并成了一个技能，源文件在 [`zcode-skills/tribot/SKILL.md`](zcode-skills/tribot/SKILL.md)。ZCode 和 DSH 共用同一份内容（同时写了 `when_to_use` 与 `whenToUse`）。
+
+**ZCode**
 
 ```bash
 cp -R zcode-skills/tribot ~/.zcode/skills/
+```
+
+**DSH（DeepSeek Harness）**
+
+```bash
+cp -R zcode-skills/tribot ~/.dsh/skills/
 ```
 
 加载 `tribot` 后会先让你选角色：
@@ -145,7 +153,8 @@ cp -R zcode-skills/tribot ~/.zcode/skills/
 4. ⏰ 管家   5. 🧪 审稿人   6. 👥 团队
 ```
 
-回复编号或名字即可；也可以直接说「用工程师」。技能只是指令，不含可执行代码或 API Key。详见 [zcode-skills/README.md](zcode-skills/README.md)。
+回复编号或名字即可；也可以直接说「用工程师」。技能只是指令，不含可执行代码或 API Key。
+详见 [zcode-skills/README.md](zcode-skills/README.md) 和 [dsh-skills/README.md](dsh-skills/README.md)。
 
 ## License
 
