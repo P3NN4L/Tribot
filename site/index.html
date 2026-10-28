@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TriBot — 跑在你电脑上的 Bot 团队</title>
+<meta name="description" content="本地 Bot 团队工作台：多家模型任意混用、写文件跑命令要你点头、每个任务有自己的文件夹。上下文比同类省 87%。" />
+<style>
+  :root {
+    color-scheme: dark;
+    --ink-950:#08080a; --ink-900:#0c0c0e; --ink-850:#111113; --ink-800:#161618;
+    --bone-50:#f7f5f0; --bone-300:#c9c5bc; --bone-500:#97938a;
+    --brass-300:#f0ce8e; --brass-400:#e3b261; --brass-500:#c9954a;
+    --line:rgba(247,245,240,.08); --line-2:rgba(247,245,240,.14);
+    --green:#8fd9a8;
+    --font:"Segoe UI Variable Text","Segoe UI","PingFang SC","Microsoft YaHei UI",system-ui,sans-serif;
+    --display:"Segoe UI Variable Display","PingFang SC","Microsoft YaHei UI",system-ui,sans-serif;
+    --mono:"Cascadia Code",Consolas,ui-monospace,monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--ink-950); color: var(--bone-50); font-family: var(--font); line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+  .nav { position: sticky; top: 0; z-index: 20; background: rgba(8,8,10,.86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; gap: 20px; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-weight: 650; letter-spacing: -0.02em; }
+  .logo i { width: 26px; height: 26px; border-radius: 8px; background: var(--brass-400); display: grid; place-items: center; color: #171106; font-style: normal; font-size: 14px; }
+  .nav-links { margin-left: auto; display: flex; gap: 22px; font-size: 13px; color: var(--bone-500); }
+  .nav-links a:hover { color: var(--bone-50); }
+  .btn { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 18px; border-radius: 9px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--brass-400); color: #171106; }
+  .btn-primary:hover { background: var(--brass-300); }
+  .btn-ghost { border-color: var(--line-2); color: var(--bone-300); }
+  .btn-ghost:hover { border-color: var(--brass-400); color: var(--bone-50); }
+
+  .hero { padding: 84px 0 56px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; color: var(--brass-400); letter-spacing: .08em; margin-bottom: 18px; }
+  h1 { font-family: var(--display); font-size: clamp(34px, 4.4vw, 52px); line-height: 1.12; letter-spacing: -0.03em; font-weight: 650; margin-bottom: 18px; }
+  .hero p.lead { font-size: 15px; color: var(--bone-300); max-width: 30em; margin-bottom: 26px; }
+  .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .hero-note { font-size: 12px; color: var(--bone-500); }
+  .shot { border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; background: var(--ink-900); box-shadow: 0 40px 90px rgba(0,0,0,.55); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--ink-850); }
+  .shot-bar i { width: 9px; height: 9px; border-radius: 50%; background: rgba(247,245,240,.18); }
+  .shot-bar span { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--bone-500); }
+
+  .metrics { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .metrics-inner { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .metric { padding: 26px 22px; border-right: 1px solid var(--line); }
+  .metric:last-child { border-right: none; }
+  .metric b { display: block; font-family: var(--display); font-size: 28px; letter-spacing: -0.02em; color: var(--brass-300); font-weight: 650; }
+  .metric span { font-size: 12px; color: var(--bone-500); }
+
+  section { padding: 76px 0; }
+  .sec-head { margin-bottom: 34px; }
+  .sec-head h2 { font-family: var(--display); font-size: 28px; letter-spacing: -0.02em; font-weight: 650; margin-bottom: 8px; }
+  .sec-head p { color: var(--bone-500); font-size: 14px; }
+
+  .features { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--ink-900); }
+  .card:hover { border-color: rgba(227,178,97,.4); }
+  .card .k { font-family: var(--mono); font-size: 10px; color: var(--brass-400); letter-spacing: .08em; }
+  .card h3 { font-size: 15px; margin: 10px 0 8px; font-weight: 600; }
+  .card p { font-size: 12.5px; color: var(--bone-500); }
+
+  .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .gallery .shot:first-child { grid-column: 1 / -1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  th { color: var(--bone-500); font-weight: 500; font-size: 12px; }
+  td:first-child { color: var(--bone-500); }
+  td strong { color: var(--brass-300); font-weight: 600; }
+
+  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .dl-card { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--ink-900); display: flex; flex-direction: column; gap: 8px; }
+  .dl-card.primary { border-color: rgba(227,178,97,.5); }
+  .dl-card .os { font-family: var(--mono); font-size: 10px; color: var(--brass-400); letter-spacing: .08em; }
+  .dl-card h3 { font-size: 17px; margin: 2px 0 0; }
+  .dl-card .file { font-family: var(--mono); font-size: 11px; color: var(--bone-500); }
+  .dl-card .btn { align-self: flex-start; margin-top: 4px; }
+  .dl-card p.small { font-size: 12px; color: var(--bone-500); margin: 2px 0 0; }
+  .security { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .security .card p { margin-top: 4px; }
+
+  .cta { text-align: center; border: 1px solid var(--line-2); border-radius: 18px; padding: 52px 24px; background: linear-gradient(180deg, rgba(227,178,97,.07), transparent 70%); }
+  .cta h2 { font-family: var(--display); font-size: 30px; letter-spacing: -0.02em; margin-bottom: 10px; }
+  .cta p { color: var(--bone-500); font-size: 13.5px; margin-bottom: 24px; }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--bone-500); font-size: 12px; display: flex; gap: 18px; justify-content: space-between; }
+  @media (max-width: 900px) {
+    .hero-grid, .gallery { grid-template-columns: 1fr; }
+    .metrics-inner { grid-template-columns: 1fr 1fr; }
+    .features { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <div class="logo"><i><svg viewBox="0 0 24 24" width="14" height="14" fill="#171106" aria-hidden="true"><path d="M13.2 2.6L4.8 13.4h5.6l-1 8 8.8-11.2h-6z"/></svg></i> TriBot<span style="color:var(--brass-400)">.</span></div>
+      <div class="nav-links">
+        <a href="#features">能力</a>
+        <a href="#shots">界面</a>
+        <a href="#compare">对比</a>
+        <a href="#get">下载</a>
+      </div>
+      <a class="btn btn-primary" href="#get">下载</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">LOCAL-FIRST · BRING YOUR OWN MODELS</div>
+        <h1>把任务丢给一支<br />Bot 团队</h1>
+        <p class="lead">总管拆任务、专家干活，全部跑在你自己的电脑上。多家模型任意混用，写文件跑命令要你点头，每个任务有自己的文件夹。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#get">下载桌面版</a>
+          <a class="btn btn-ghost" href="#shots">先看界面</a>
+        </div>
+        <div class="hero-note">Windows · macOS · Linux · 本地运行 · 不上传代码</div>
+      </div>
+      <div class="shot">
+        <div class="shot-bar"><i></i><i></i><i></i><span>TriBot · 本地</span></div>
+        <img src="assets/app-home.png" alt="TriBot 首页" />
+      </div>
+    </div>
+  </header>
+
+  <div class="metrics">
+    <div class="wrap metrics-inner">
+      <div class="metric"><b>733</b><span>每轮固定前缀 tokens（同类约 12,200）</span></div>
+      <div class="metric"><b>87.3%</b><span>综合场景上下文节省</span></div>
+      <div class="metric"><b>3 + N</b><span>内置三家 + 任意 OpenAI 兼容供应商</span></div>
+      <div class="metric"><b>100%</b><span>数据留在本机</span></div>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>别人不做的那几件事</h2>
+        <p>不是又一个聊天框，是一个能审计、能拦住、算得清成本的本地工作台。</p>
+      </div>
+      <div class="features">
+        <div class="card"><div class="k">01 · ROUTING</div><h3>峰谷 + 订阅额度路由</h3><p>GLM / MiniMax 额度内先跑，溢出再走 DeepSeek；低谷半价自动加分。同一任务换时间执行，成本差一半。</p></div>
+        <div class="card"><div class="k">02 · CONTEXT</div><h3>三道闸，不爆上下文</h3><p>长工具输出落盘只回头尾，大文件分段读，长对话压成摘要。2.2MB 输出从 55 万 tokens 压到 626。</p></div>
+        <div class="card"><div class="k">03 · PERMISSION</div><h3>沙箱三档 × 审批作用域</h3><p>只读 / 工作区 / 全权，配一次 / 本会话 / 永久三种授权。永久授权随时可撤销。</p></div>
+        <div class="card"><div class="k">04 · PROVIDERS</div><h3>供应商随便加</h3><p>内置三家之外，Kimi、OpenAI、本地 Ollama 填个 Base URL 和 Key 就能用，拉模型、测试连接一条龙。</p></div>
+        <div class="card"><div class="k">05 · TASKS</div><h3>每个任务一个文件夹</h3><p>新任务自动建目录，产出直接落盘；也能直接指向你已有的项目目录。</p></div>
+        <div class="card"><div class="k">06 · PLAN</div><h3>先出计划再动手</h3><p>计划模式下写文件、跑命令、抓外网直接被拦，方案批准后才执行。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="shots" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>长这样</h2>
+        <p>暗色仪器感界面：黄铜只用在主操作上，其余全是灰阶。</p>
+      </div>
+      <div class="gallery">
+        <div class="shot"><div class="shot-bar"><i></i><i></i><i></i><span>对话 · 审批 · 配额</span></div><img src="assets/app-thread.png" alt="对话界面" /></div>
+        <div class="shot"><div class="shot-bar"><i></i><i></i><i></i><span>技能库</span></div><img src="assets/app-skills.png" alt="技能库" /></div>
+        <div class="shot"><div class="shot-bar"><i></i><i></i><i></i><span>首次启动</span></div><img src="assets/app-onboard.png" alt="首次启动引导" /></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>和同类比</h2>
+        <p>数字来自本仓库 <code>pnpm bench</code> 的实测；竞品为公开资料。</p>
+      </div>
+      <table>
+        <thead><tr><th>维度</th><th>TriBot</th><th>Claude Code</th><th>Grok Bot</th></tr></thead>
+        <tbody>
+          <tr><td>固定前缀</td><td><strong>733 tokens</strong></td><td>约 12,200</td><td>未公开</td></tr>
+          <tr><td>模型选择</td><td><strong>内置 3 家 + 任意兼容供应商</strong></td><td>仅 Anthropic</td><td>用户不可选</td></tr>
+          <tr><td>峰谷 / 订阅路由</td><td><strong>有</strong></td><td>无</td><td>无</td></tr>
+          <tr><td>同题对比</td><td><strong>有</strong></td><td>无</td><td>无</td></tr>
+          <tr><td>数据</td><td><strong>全本地</strong></td><td>云</td><td>云</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="security" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>API Key 怎么保护</h2>
+        <p>目标：翻磁盘、拷安装目录，都拿不到明文 Key。</p>
+      </div>
+      <div class="security">
+        <div class="card"><div class="k">AT REST</div><h3>AES-256-GCM 密文</h3><p>凭证以 <code>enc:v1:</code> 落盘，不再是明文 JSON；拷走文件没有主密钥也解不开。</p></div>
+        <div class="card"><div class="k">MASTER KEY</div><h3>系统级保护</h3><p>桌面版主密钥由 Windows DPAPI / macOS Keychain（Electron safeStorage）加密；纯命令行模式用本机兜底密钥。</p></div>
+        <div class="card"><div class="k">SURFACE</div><h3>界面只见尾号</h3><p>渲染层只拿 <code>hasKey</code> 和 <code>…sDpM</code>；发布包里没有 data/、.env 或 Key 片段。</p></div>
+      </div>
+      <p style="color:var(--bone-500);font-size:12px;margin-top:14px">边界：同用户的恶意程序仍可读进程内存；本地客户端无法承诺防住本机管理员。能做的是静态文件、安装包、日志、界面都不泄露明文。</p>
+    </div>
+  </section>
+
+  <section id="get" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>下载</h2>
+        <p>Windows 是编译好的原生壳（C# + WebView2）；macOS / Linux 是 Python + 系统 WebView 的源码包。都不再打包 Electron。</p>
+      </div>
+      <div class="dl-grid">
+        <div class="dl-card primary">
+          <div class="os">WINDOWS</div>
+          <h3>Windows 10 / 11 · x64 · 原生壳</h3>
+          <span class="file">TriBot-0.1.0-win-native-x64.zip · 40MB</span>
+          <a class="btn btn-primary" href="downloads/TriBot-0.1.0-win-native-x64.zip" download>下载原生壳</a>
+          <p class="small">不用 Electron：C# + 系统 WebView2，原生标题栏。解压双击 TriBotShell.exe。</p>
+        </div>
+        <div class="dl-card">
+          <div class="os">MACOS · 原生壳</div>
+          <h3>macOS（M 系列 / Intel）</h3>
+          <span class="file">TriBot-0.1.0-shell-src.zip · 4MB</span>
+          <a class="btn btn-ghost" href="downloads/TriBot-0.1.0-shell-src.zip" download>下载源码包</a>
+          <p class="small">Python + WKWebView，不用 Electron。解压后 <code>pip install pywebview && python tribot_shell.py</code>。</p>
+        </div>
+        <div class="dl-card">
+          <div class="os">LINUX · 原生壳</div>
+          <h3>Linux x64</h3>
+          <span class="file">TriBot-0.1.0-shell-src.zip · 4MB</span>
+          <a class="btn btn-ghost" href="downloads/TriBot-0.1.0-shell-src.zip" download>下载源码包</a>
+          <p class="small">Python + WebKitGTK；需要 <code>python3-gi</code> / <code>gir1.2-webkit2-4.1</code> 和图形桌面。</p>
+        </div>
+        <div class="dl-card">
+          <div class="os">BUILD</div>
+          <h3>为什么 macOS 只有源码包</h3>
+          <span class="file">native shell · 持续移植中</span>
+          <p class="small">Windows 壳已编译好；macOS / Linux 的原生 WebView 壳需要各自平台编译与签名，先在源码包里提供可运行版本。</p>
+        </div>
+      </div>
+      <p style="color:var(--bone-500);font-size:12px;margin-top:14px">Windows 原生壳是 C# + 系统 WebView2；macOS / Linux 是 Python + 系统 WebView。两者都不再打包 Electron 运行时。</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap" style="display:flex;justify-content:space-between;width:100%">
+      <span>TriBot · 本地 Bot 团队工作台</span>
+      <span>Windows · macOS · Linux · GLM · MiniMax · DeepSeek</span>
+    </div>
+  </footer>
+</body>
+</html>

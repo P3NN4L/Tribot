@@ -1,0 +1,64 @@
+{
+  "systemTokens": 322,
+  "toolTokens": 411,
+  "prefixTokens": 733,
+  "rows": [
+    {
+      "file": "packages/core/src/engine/index.ts",
+      "kind": "read",
+      "label": "读源码",
+      "chars": 15587,
+      "lines": 370,
+      "tokens": 4201,
+      "afterRead": 4201,
+      "readNote": "0%（不足 2000 行）",
+      "packedTokens": 559,
+      "spillSaved": 86.7
+    },
+    {
+      "file": "README.md",
+      "kind": "read",
+      "label": "读文档",
+      "chars": 6835,
+      "lines": 166,
+      "tokens": 3819,
+      "afterRead": 3819,
+      "readNote": "0%（不足 2000 行）",
+      "packedTokens": 1283,
+      "spillSaved": 66.4
+    },
+    {
+      "file": "pnpm-lock.yaml",
+      "kind": "read",
+      "label": "读 lockfile",
+      "chars": 113401,
+      "lines": 3523,
+      "tokens": 53364,
+      "afterRead": 39636,
+      "readNote": "25.7%",
+      "packedTokens": 1050,
+      "spillSaved": 98
+    },
+    {
+      "file": "packages/app/build/server.cjs",
+      "kind": "output",
+      "label": "命令输出（cat 打包产物）",
+      "chars": 2265018,
+      "lines": 57914,
+      "tokens": 554793,
+      "afterRead": null,
+      "readNote": "",
+      "packedTokens": 626,
+      "spillSaved": 99.9
+    }
+  ],
+  "historyTokens": 13498,
+  "compactedTokens": 5508,
+  "turns": 30,
+  "totalNoCache": 105690,
+  "totalWithPrefixCache": 85899.00000000003,
+  "repeatWaste": 10860,
+  "repeatSaved": 3620,
+  "scenarioNaive": 728526,
+  "scenarioTriBot": 92478.00000000003
+}

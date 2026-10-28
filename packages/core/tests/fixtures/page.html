@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>TriBot 测试页</title>
+</head>
+<body>
+  <h1>卡片二测试页</h1>
+  <p>这是一个用于 browser 工具测试的静态页面。</p>
+  <p id="status">未点击</p>
+  <button id="btn" onclick="document.getElementById('status').textContent='已点击！'">点我</button>
+  <a href="/second.html" id="link2">去第二页</a>
+  <input name="q" placeholder="搜索词" />
+  <form id="f" action="/never-submit">
+    <button id="submitbtn">提交</button>
+  </form>
+</body>
+</html>

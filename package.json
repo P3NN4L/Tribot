@@ -1,0 +1,39 @@
+{
+  "name": "tribot-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TriBot — 类 Grok Bot 的本地 Bot 团队工作台（GLM + MiniMax + DeepSeek）",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @tribot/app dev",
+    "dev:server": "pnpm --filter @tribot/app dev:server",
+    "dev:web": "pnpm --filter @tribot/app dev:web",
+    "cli": "node packages/cli/tb.mjs",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "bench": "node scripts/bench.mjs",
+    "bench:speed": "node scripts/bench-speed-matrix.mjs",
+    "eval:roles": "node scripts/eval-roles.mjs",
+    "package": "node scripts/package-portable.mjs",
+    "installer": "node scripts/package-installer.mjs",
+    "package:targets": "node scripts/package-target-installers.mjs",
+    "package:native": "node scripts/package-native-shell.mjs"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "gpt-tokenizer": "^4.1.0",
+    "png-to-ico": "^3.0.2",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
