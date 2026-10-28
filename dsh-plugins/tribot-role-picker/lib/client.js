@@ -27,108 +27,226 @@ module.exports = __toCommonJS(index_exports);
 
 // src/client/RoleDock.tsx
 var import_react = require("react");
+
+// src/client/locales.ts
+var NS = "tribot-role-picker";
+var zh = {
+  "choose": "\u9009\u62E9\u89D2\u8272",
+  "chooseAria": "\u9009\u62E9 TriBot \u89D2\u8272",
+  "menuAria": "TriBot \u89D2\u8272",
+  "role.dispatcher": "\u603B\u7BA1",
+  "role.dispatcher.desc": "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536",
+  "role.researcher": "\u7814\u7A76\u5458",
+  "role.researcher.desc": "\u68C0\u7D22\u3001\u6765\u6E90\u5206\u7EA7\u3001\u4EA4\u53C9\u9A8C\u8BC1",
+  "role.engineer": "\u5DE5\u7A0B\u5E08",
+  "role.engineer.desc": "\u8BFB\u6539\u6587\u4EF6\u3001\u8DD1\u547D\u4EE4\u3001\u9A8C\u8BC1",
+  "role.steward": "\u7BA1\u5BB6",
+  "role.steward.desc": "\u5DE1\u68C0\u3001\u9608\u503C\u5224\u7EA7\u3001\u5F02\u5E38\u7B80\u62A5",
+  "role.reviewer": "\u5BA1\u7A3F\u4EBA",
+  "role.reviewer.desc": "\u5BF9\u6297\u5BA1\u67E5\uFF1A\u7ED3\u8BBA / \u5F15\u7528 / \u8FB9\u754C",
+  "role.team": "\u56E2\u961F",
+  "role.team.desc": "\u603B\u7BA1 \u2192 \u4E13\u5BB6 \u2192 \u5BA1\u7A3F\u4EBA"
+};
+var en = {
+  "choose": "Choose role",
+  "chooseAria": "Choose a TriBot role",
+  "menuAria": "TriBot roles",
+  "role.dispatcher": "Dispatcher",
+  "role.dispatcher.desc": "Split, assign, merge, accept",
+  "role.researcher": "Researcher",
+  "role.researcher.desc": "Search, grade sources, cross-check",
+  "role.engineer": "Engineer",
+  "role.engineer.desc": "Read, edit, run, verify",
+  "role.steward": "Steward",
+  "role.steward.desc": "Inspect, grade, report exceptions",
+  "role.reviewer": "Reviewer",
+  "role.reviewer.desc": "Adversarial review: claims, citations, limits",
+  "role.team": "Team",
+  "role.team.desc": "Dispatcher \u2192 specialist \u2192 reviewer"
+};
+
+// src/client/RoleDock.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
 var ROLES = [
-  { name: "\u603B\u7BA1", emoji: "\u{1F9ED}", desc: "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536" },
-  { name: "\u7814\u7A76\u5458", emoji: "\u{1F50D}", desc: "\u68C0\u7D22\u3001\u6765\u6E90\u5206\u7EA7\u3001\u4EA4\u53C9\u9A8C\u8BC1" },
-  { name: "\u5DE5\u7A0B\u5E08", emoji: "\u{1F6E0}", desc: "\u8BFB\u6539\u6587\u4EF6\u3001\u8DD1\u547D\u4EE4\u3001\u9A8C\u8BC1" },
-  { name: "\u7BA1\u5BB6", emoji: "\u23F0", desc: "\u5DE1\u68C0\u3001\u9608\u503C\u5224\u7EA7\u3001\u5F02\u5E38\u7B80\u62A5" },
-  { name: "\u5BA1\u7A3F\u4EBA", emoji: "\u{1F9EA}", desc: "\u5BF9\u6297\u5BA1\u67E5\uFF1A\u7ED3\u8BBA/\u5F15\u7528/\u8FB9\u754C" },
-  { name: "\u56E2\u961F", emoji: "\u{1F465}", desc: "\u603B\u7BA1 \u2192 \u4E13\u5BB6 \u2192 \u5BA1\u7A3F\u4EBA" }
+  { id: "dispatcher", canonical: "\u603B\u7BA1", emoji: "\u{1F9ED}" },
+  { id: "researcher", canonical: "\u7814\u7A76\u5458", emoji: "\u{1F50D}" },
+  { id: "engineer", canonical: "\u5DE5\u7A0B\u5E08", emoji: "\u{1F6E0}" },
+  { id: "steward", canonical: "\u7BA1\u5BB6", emoji: "\u23F0" },
+  { id: "reviewer", canonical: "\u5BA1\u7A3F\u4EBA", emoji: "\u{1F9EA}" },
+  { id: "team", canonical: "\u56E2\u961F", emoji: "\u{1F465}" }
 ];
-function applyRole(draft, name) {
+function applyRole(draft, canonical) {
   const rest = draft.replace(/^\/tribot\s+\S+\s*/u, "");
-  return `/tribot ${name} ${rest}`.trimEnd() + " ";
+  return `/tribot ${canonical} ${rest}`.trimEnd() + " ";
 }
 function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
   const draft = props?.input?.draft ?? "";
-  const active = ROLES.find((role) => draft.startsWith(`/tribot ${role.name}`));
-  const label = active ? `${active.emoji} ${active.name}` : "\u9009\u62E9 Bot \u89D2\u8272";
-  const pick = (name) => {
-    props?.inputActions?.setDraft?.(applyRole(draft, name));
+  const matched = draft.match(/^\/tribot\s+(\S+)/u);
+  const active = ROLES.find((role) => role.canonical === matched?.[1]);
+  const isZh = String(props?.locale ?? (typeof navigator === "undefined" ? "" : navigator.language)).toLowerCase().startsWith("zh");
+  const fallback = isZh ? zh : en;
+  const t = (key) => props?.t?.(key) ?? fallback[key] ?? String(key);
+  const pick = (canonical) => {
+    props?.inputActions?.setDraft?.(applyRole(draft, canonical));
     setOpen(false);
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 11, color: "var(--dsh-color-text-tertiary, #8a8a8a)" }, children: "TriBot" }),
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "tribot-role-dock", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "button",
       {
         type: "button",
+        className: "tribot-role-trigger",
         "aria-haspopup": "menu",
         "aria-expanded": open,
+        "aria-label": t("chooseAria"),
         onClick: () => setOpen((value) => !value),
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          height: 26,
-          padding: "0 10px",
-          borderRadius: 13,
-          border: "1px solid var(--dsh-color-border, #d8d2c4)",
-          background: "var(--dsh-color-bg-elevated, #fffdf7)",
-          color: "var(--dsh-color-text, #2b2a26)",
-          fontSize: 12,
-          cursor: "pointer"
-        },
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: label }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 9, opacity: 0.6 }, children: "\u25BE" })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: active ? `${active.emoji} ${t(`role.${active.id}`)}` : t("choose") }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-caret", "aria-hidden": true, children: "\u25BE" })
         ]
       }
     ),
-    open && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-      "div",
+    open && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tribot-role-menu", role: "menu", "aria-label": t("menuAria"), children: ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+      "button",
       {
-        role: "menu",
-        style: {
-          position: "absolute",
-          bottom: 34,
-          left: 48,
-          zIndex: 50,
-          width: 260,
-          padding: 6,
-          borderRadius: 10,
-          border: "1px solid var(--dsh-color-border, #d8d2c4)",
-          background: "var(--dsh-color-bg-elevated, #fffdf7)",
-          boxShadow: "0 12px 32px rgba(0,0,0,.18)"
-        },
-        children: ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-          "button",
-          {
-            type: "button",
-            role: "menuitem",
-            onClick: () => pick(role.name),
-            style: {
-              display: "flex",
-              width: "100%",
-              alignItems: "center",
-              gap: 10,
-              padding: "8px 10px",
-              border: 0,
-              borderRadius: 7,
-              background: active?.name === role.name ? "rgba(180,140,60,.12)" : "transparent",
-              color: "inherit",
-              textAlign: "left",
-              cursor: "pointer"
-            },
-            children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { width: 18, textAlign: "center" }, children: role.emoji }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { style: { display: "flex", flexDirection: "column", gap: 1 }, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 13 }, children: role.name }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { fontSize: 11, opacity: 0.55 }, children: role.desc })
-              ] })
-            ]
-          },
-          role.name
-        ))
-      }
-    )
+        type: "button",
+        role: "menuitemradio",
+        "aria-checked": active?.id === role.id,
+        className: "tribot-role-item",
+        onClick: () => pick(role.canonical),
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-emoji", "aria-hidden": true, children: role.emoji }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "tribot-role-copy", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-name", children: t(`role.${role.id}`) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-desc", children: t(`role.${role.id}.desc`) })
+          ] })
+        ]
+      },
+      role.id
+    )) })
   ] });
 }
 
+// src/client/styles.ts
+var installed = false;
+var CSS = `
+.tribot-role-dock {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: calc(100% - var(--dsh-composer-side-clearance, 16px) - var(--dsh-composer-side-clearance, 16px));
+  max-width: var(--dsh-composer-card-max-width, 760px);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 2px 0;
+  position: relative;
+}
+
+.tribot-role-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+  transition: border-color .12s ease, color .12s ease, background .12s ease;
+}
+
+.tribot-role-trigger:hover,
+.tribot-role-trigger[aria-expanded='true'] {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary);
+}
+
+.tribot-role-caret {
+  font-size: 9px;
+  opacity: .55;
+}
+
+.tribot-role-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 60;
+  box-sizing: border-box;
+  width: 270px;
+  padding: 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+
+.tribot-role-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tribot-role-item:hover {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 9%, transparent);
+}
+
+.tribot-role-item[aria-checked='true'] {
+  color: var(--dsw-alias-brand-primary);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);
+}
+
+.tribot-role-emoji {
+  flex: none;
+  width: 18px;
+  text-align: center;
+}
+
+.tribot-role-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tribot-role-name {
+  font-size: 13px;
+}
+
+.tribot-role-desc {
+  overflow: hidden;
+  color: var(--dsw-alias-label-secondary, var(--dsw-alias-label-primary));
+  font-size: 11px;
+  opacity: .62;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+`;
+function adoptStyles() {
+  if (installed || typeof document === "undefined") return;
+  installed = true;
+  const style = document.createElement("style");
+  style.dataset.tribotRolePicker = "";
+  style.textContent = CSS;
+  document.head.append(style);
+}
+
 // src/client/index.ts
-var inject = ["inputTriggers", "slots"];
+var inject = ["inputTriggers", "slots", "locale"];
 var ROLES2 = [
   { id: "dispatcher", name: "\u603B\u7BA1", description: "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536" },
   { id: "researcher", name: "\u7814\u7A76\u5458", description: "\u68C0\u7D22\u3001\u6765\u6E90\u5206\u7EA7\u3001\u4EA4\u53C9\u9A8C\u8BC1" },
@@ -138,6 +256,11 @@ var ROLES2 = [
   { id: "team", name: "\u56E2\u961F", description: "\u603B\u7BA1 \u2192 \u4E13\u5BB6 \u2192 \u5BA1\u7A3F\u4EBA \u6D41\u6C34\u7EBF" }
 ];
 function apply(ctx) {
+  adoptStyles();
+  const locale = ctx.locale;
+  if (locale?.register) {
+    ctx.effect(() => locale.register(NS, { zh, en }), "tribot-role-picker: dictionaries");
+  }
   const inputTriggers = ctx.get("inputTriggers");
   if (!inputTriggers?.registerSource) {
     console.warn("[tribot-role-picker] inputTriggers service is unavailable");
@@ -173,7 +296,8 @@ function apply(ctx) {
         {
           name: "conversation.input.dock",
           id: "tribot-role-picker",
-          order: 30
+          order: 30,
+          locale: NS
         },
         RoleDock
       )

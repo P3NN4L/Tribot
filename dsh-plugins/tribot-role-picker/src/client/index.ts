@@ -7,8 +7,10 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import { RoleDock } from './RoleDock'
+import { NS, en, zh } from './locales'
+import { adoptStyles } from './styles'
 
-export const inject = ['inputTriggers', 'slots']
+export const inject = ['inputTriggers', 'slots', 'locale']
 
 interface Role {
   id: string
@@ -26,6 +28,14 @@ const ROLES: readonly Role[] = [
 ]
 
 export function apply(ctx: Context): void {
+  adoptStyles()
+  const locale = (ctx as unknown as {
+    locale?: { register(name: string, dictionaries: { zh: unknown; en: unknown }): () => void }
+  }).locale
+  if (locale?.register) {
+    ctx.effect(() => locale.register(NS, { zh, en }), 'tribot-role-picker: dictionaries')
+  }
+
   const inputTriggers = ctx.get('inputTriggers') as
     | { registerSource(source: unknown): () => void }
     | undefined
@@ -76,6 +86,7 @@ export function apply(ctx: Context): void {
           name: 'conversation.input.dock',
           id: 'tribot-role-picker',
           order: 30,
+          locale: NS,
         },
         RoleDock,
       ),

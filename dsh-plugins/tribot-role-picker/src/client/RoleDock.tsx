@@ -1,83 +1,77 @@
 import { useState } from 'react'
+import { en, zh } from './locales'
 
-const ROLES = [
-  { name: '总管', emoji: '🧭', desc: '拆解、分派、合并、验收' },
-  { name: '研究员', emoji: '🔍', desc: '检索、来源分级、交叉验证' },
-  { name: '工程师', emoji: '🛠', desc: '读改文件、跑命令、验证' },
-  { name: '管家', emoji: '⏰', desc: '巡检、阈值判级、异常简报' },
-  { name: '审稿人', emoji: '🧪', desc: '对抗审查：结论/引用/边界' },
-  { name: '团队', emoji: '👥', desc: '总管 → 专家 → 审稿人' },
-] as const
+interface Role {
+  id: string
+  canonical: string
+  emoji: string
+}
 
-function applyRole(draft: string, name: string): string {
+const ROLES: readonly Role[] = [
+  { id: 'dispatcher', canonical: '总管', emoji: '🧭' },
+  { id: 'researcher', canonical: '研究员', emoji: '🔍' },
+  { id: 'engineer', canonical: '工程师', emoji: '🛠' },
+  { id: 'steward', canonical: '管家', emoji: '⏰' },
+  { id: 'reviewer', canonical: '审稿人', emoji: '🧪' },
+  { id: 'team', canonical: '团队', emoji: '👥' },
+]
+
+function applyRole(draft: string, canonical: string): string {
   const rest = draft.replace(/^\/tribot\s+\S+\s*/u, '')
-  return `/tribot ${name} ${rest}`.trimEnd() + ' '
+  return `/tribot ${canonical} ${rest}`.trimEnd() + ' '
 }
 
 /**
- * Visible role picker in the composer dock, above the input. No trigger needed:
- * click the pill, choose a role, and the draft becomes `/tribot <role> `.
+ * Visible role picker in the composer dock. The pill sits on the chatbox's
+ * left edge (same clearance/max-width as the composer card), follows the DSH
+ * theme tokens and locale, and writes `/tribot <role> ` into the draft.
  */
 export function RoleDock(props: any) {
   const [open, setOpen] = useState(false)
   const draft: string = props?.input?.draft ?? ''
-  const active = ROLES.find((role) => draft.startsWith(`/tribot ${role.name}`))
-  const label = active ? `${active.emoji} ${active.name}` : '选择 Bot 角色'
+  const matched = draft.match(/^\/tribot\s+(\S+)/u)
+  const active = ROLES.find((role) => role.canonical === matched?.[1])
 
-  const pick = (name: string) => {
-    props?.inputActions?.setDraft?.(applyRole(draft, name))
+  const isZh = String(props?.locale ?? (typeof navigator === 'undefined' ? '' : navigator.language))
+    .toLowerCase()
+    .startsWith('zh')
+  const fallback = isZh ? zh : en
+  const t = (key: keyof typeof zh): string => props?.t?.(key) ?? fallback[key] ?? String(key)
+
+  const pick = (canonical: string) => {
+    props?.inputActions?.setDraft?.(applyRole(draft, canonical))
     setOpen(false)
   }
 
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
-      <span style={{ fontSize: 11, color: 'var(--dsh-color-text-tertiary, #8a8a8a)' }}>TriBot</span>
+    <div className="tribot-role-dock">
       <button
         type="button"
+        className="tribot-role-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={t('chooseAria')}
         onClick={() => setOpen((value) => !value)}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          height: 26, padding: '0 10px', borderRadius: 13,
-          border: '1px solid var(--dsh-color-border, #d8d2c4)',
-          background: 'var(--dsh-color-bg-elevated, #fffdf7)',
-          color: 'var(--dsh-color-text, #2b2a26)',
-          fontSize: 12, cursor: 'pointer',
-        }}
       >
-        <span>{label}</span>
-        <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+        <span>{active ? `${active.emoji} ${t(`role.${active.id}` as keyof typeof zh)}` : t('choose')}</span>
+        <span className="tribot-role-caret" aria-hidden>▾</span>
       </button>
 
       {open && (
-        <div
-          role="menu"
-          style={{
-            position: 'absolute', bottom: 34, left: 48, zIndex: 50,
-            width: 260, padding: 6, borderRadius: 10,
-            border: '1px solid var(--dsh-color-border, #d8d2c4)',
-            background: 'var(--dsh-color-bg-elevated, #fffdf7)',
-            boxShadow: '0 12px 32px rgba(0,0,0,.18)',
-          }}
-        >
+        <div className="tribot-role-menu" role="menu" aria-label={t('menuAria')}>
           {ROLES.map((role) => (
             <button
-              key={role.name}
+              key={role.id}
               type="button"
-              role="menuitem"
-              onClick={() => pick(role.name)}
-              style={{
-                display: 'flex', width: '100%', alignItems: 'center', gap: 10,
-                padding: '8px 10px', border: 0, borderRadius: 7,
-                background: active?.name === role.name ? 'rgba(180,140,60,.12)' : 'transparent',
-                color: 'inherit', textAlign: 'left', cursor: 'pointer',
-              }}
+              role="menuitemradio"
+              aria-checked={active?.id === role.id}
+              className="tribot-role-item"
+              onClick={() => pick(role.canonical)}
             >
-              <span style={{ width: 18, textAlign: 'center' }}>{role.emoji}</span>
-              <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <span style={{ fontSize: 13 }}>{role.name}</span>
-                <span style={{ fontSize: 11, opacity: 0.55 }}>{role.desc}</span>
+              <span className="tribot-role-emoji" aria-hidden>{role.emoji}</span>
+              <span className="tribot-role-copy">
+                <span className="tribot-role-name">{t(`role.${role.id}` as keyof typeof zh)}</span>
+                <span className="tribot-role-desc">{t(`role.${role.id}.desc` as keyof typeof zh)}</span>
               </span>
             </button>
           ))}

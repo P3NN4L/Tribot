@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "TriBot role picker for the DSH composer: type # and choose dispatcher / researcher / engineer / steward / reviewer / team.",
+  "description": "TriBot role picker for the DSH composer: a visible pill above the chatbox, following DSH theme and locale.",
   "license": "MIT",
   "main": "lib/index.js",
   "exports": {
@@ -19,7 +19,8 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-ui-input-trigger",
-        "@deepseek-ai/dsh-client-ui-slots"
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-locale"
       ]
     }
   },

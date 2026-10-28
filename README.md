@@ -154,14 +154,14 @@ pnpm typecheck
 
 ## DSH 角色选择器
 
-DSH 里装一个客户端插件后，输入框上方会多一个 **「选择 Bot 角色」** 胶囊，点开即可选：
+DSH 里装一个客户端插件后，输入框左侧会多一个 **「选择角色」** 胶囊，点开即可选：
 
 ```
-TriBot  [ 选择 Bot 角色 ▾ ]
+[ 选择角色 ▾ ]
     → 总管 / 研究员 / 工程师 / 管家 / 审稿人 / 团队
 ```
 
-选完自动插入 `/tribot 工程师 `；也保留 `#` 快捷键。源码：[`dsh-plugins/tribot-role-picker`](dsh-plugins/tribot-role-picker/)。这是 DSH 客户端插件，不依赖 `SKILL.md` 的菜单。
+颜色、亮/暗外观和语言跟随 DSH 设置；选完自动插入 `/tribot 工程师 `，也保留 `#` 快捷键。源码：[`dsh-plugins/tribot-role-picker`](dsh-plugins/tribot-role-picker/)。这是 DSH 客户端插件，不依赖 `SKILL.md` 的菜单。
 
 ## 在 ZCode / DSH 里使用 TriBot 的 Bot
 
