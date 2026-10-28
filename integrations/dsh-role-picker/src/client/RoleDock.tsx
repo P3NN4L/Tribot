@@ -67,7 +67,19 @@ export function RoleDock(props: any) {
     const next = !enabled
     setEnabled(next)
     writeEnabled(next)
-    if (!next) setOpen(false)
+    if (!next) {
+      setOpen(false)
+      // 关闭 = 立即退出角色：往草稿填入停用标记，发送后模型按协议退出
+      try {
+        const draft: string = props?.input?.draft ?? ''
+        const marker = '[TriBot 角色已停用，退出当前角色，恢复默认助手模式]'
+        if (!draft.includes('[TriBot 角色已停用')) {
+          props?.inputActions?.setDraft?.(draft + marker)
+        }
+      } catch {
+        /* 无法写草稿时仅停用 UI */
+      }
+    }
   }
 
   const pick = (canonical: string) => {

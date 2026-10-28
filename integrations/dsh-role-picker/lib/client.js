@@ -111,7 +111,17 @@ function RoleDock(props) {
     const next = !enabled;
     setEnabled(next);
     writeEnabled(next);
-    if (!next) setOpen(false);
+    if (!next) {
+      setOpen(false);
+      try {
+        const draft2 = props?.input?.draft ?? "";
+        const marker = "[TriBot \u89D2\u8272\u5DF2\u505C\u7528\uFF0C\u9000\u51FA\u5F53\u524D\u89D2\u8272\uFF0C\u6062\u590D\u9ED8\u8BA4\u52A9\u624B\u6A21\u5F0F]";
+        if (!draft2.includes("[TriBot \u89D2\u8272\u5DF2\u505C\u7528")) {
+          props?.inputActions?.setDraft?.(draft2 + marker);
+        }
+      } catch {
+      }
+    }
   };
   const pick = (canonical) => {
     props?.inputActions?.setDraft?.(applyRole(draft, canonical));
