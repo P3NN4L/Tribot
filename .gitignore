@@ -12,3 +12,4 @@ release/
 # 交叉打包缓存与下载产物（体积大，按需生成）
 .cache/
 site/downloads/
+.zcode/
