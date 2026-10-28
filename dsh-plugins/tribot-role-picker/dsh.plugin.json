@@ -1,0 +1,12 @@
+{
+  "name": "dsh-tribot-role-picker",
+  "description": "Pick a TriBot role in the DSH composer with #.",
+  "version": "0.1.0",
+  "entry": {
+    "name": "dsh-tribot-role-picker",
+    "inject": []
+  },
+  "client": {
+    "platform": "web"
+  }
+}
