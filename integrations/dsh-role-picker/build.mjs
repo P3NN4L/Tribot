@@ -1,7 +1,10 @@
 import { build } from 'esbuild'
-import { mkdirSync } from 'node:fs'
+import { copyFileSync, mkdirSync } from 'node:fs'
 
 mkdirSync('lib', { recursive: true })
+// Ship the same SKILL.md next to the package for inspection; the host bundle
+// inlines it at build time so runtime never depends on file layout.
+copyFileSync(new URL('../../SKILL.md', import.meta.url), new URL('./SKILL.md', import.meta.url))
 
 const dshExternal = ['@deepseek-ai/cordis', '@deepseek-ai/dsh-*']
 
@@ -12,6 +15,7 @@ await build({
   format: 'esm',
   platform: 'node',
   target: ['node22'],
+  loader: { '.md': 'text' },
   external: dshExternal,
   logLevel: 'info',
 })
