@@ -6,7 +6,7 @@
  * the role name is visible in the message. No RPC, no host state.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { RoleDock } from './RoleDock'
+import { isPickerEnabled, RoleDock } from './RoleDock'
 import { NS, en, zh } from './locales'
 import { adoptStyles } from './styles'
 
@@ -50,6 +50,8 @@ export function apply(ctx: Context): void {
         trigger: '#',
         name: 'tribot-role',
         candidates(_session: unknown, { query }: { query: string }) {
+          // 停用开关关闭时，# 菜单不再出现
+          if (!isPickerEnabled()) return []
           const q = query.trim().toLowerCase()
           const rows = q
             ? ROLES.filter(

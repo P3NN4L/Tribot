@@ -46,6 +46,52 @@ const CSS = `
   opacity: .55;
 }
 
+.tribot-role-switch {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tribot-role-track {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.tribot-role-switch:hover .tribot-role-track {
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.tribot-role-switch[aria-checked='true'] .tribot-role-track {
+  border-color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-brand-primary);
+}
+
+.tribot-role-knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-primary);
+  transition: left .12s ease, background .12s ease;
+}
+
+.tribot-role-switch[aria-checked='true'] .tribot-role-knob {
+  left: 15px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
 .tribot-role-menu {
   position: absolute;
   left: 0;

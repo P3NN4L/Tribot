@@ -34,6 +34,7 @@ var zh = {
   "choose": "\u9009\u62E9\u89D2\u8272",
   "chooseAria": "\u9009\u62E9 TriBot \u89D2\u8272",
   "menuAria": "TriBot \u89D2\u8272",
+  "switchAria": "\u542F\u7528\u6216\u505C\u7528 TriBot \u89D2\u8272\u9009\u62E9",
   "role.dispatcher": "\u603B\u7BA1",
   "role.dispatcher.desc": "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536",
   "role.researcher": "\u7814\u7A76\u5458",
@@ -51,6 +52,7 @@ var en = {
   "choose": "Choose role",
   "chooseAria": "Choose a TriBot role",
   "menuAria": "TriBot roles",
+  "switchAria": "Enable or disable the TriBot role picker",
   "role.dispatcher": "Dispatcher",
   "role.dispatcher.desc": "Split, assign, merge, accept",
   "role.researcher": "Researcher",
@@ -75,22 +77,62 @@ var ROLES = [
   { id: "reviewer", canonical: "\u5BA1\u7A3F\u4EBA", emoji: "\u{1F9EA}" },
   { id: "team", canonical: "\u56E2\u961F", emoji: "\u{1F465}" }
 ];
+var ENABLE_KEY = "tribot-role-picker:enabled";
+function readEnabled() {
+  try {
+    return typeof localStorage === "undefined" || localStorage.getItem(ENABLE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+function writeEnabled(value) {
+  try {
+    localStorage.setItem(ENABLE_KEY, value ? "1" : "0");
+  } catch {
+  }
+}
+function isPickerEnabled() {
+  return readEnabled();
+}
 function applyRole(draft, canonical) {
   const rest = draft.replace(/^\/tribot\s+\S+\s*/u, "");
   return `/tribot ${canonical} ${rest}`.trimEnd() + " ";
 }
 function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
+  const [enabled, setEnabled] = (0, import_react.useState)(readEnabled);
   const draft = props?.input?.draft ?? "";
   const matched = draft.match(/^\/tribot\s+(\S+)/u);
   const active = ROLES.find((role) => role.canonical === matched?.[1]);
   const isZh = String(props?.locale ?? (typeof navigator === "undefined" ? "" : navigator.language)).toLowerCase().startsWith("zh");
   const fallback = isZh ? zh : en;
   const t = (key) => props?.t?.(key) ?? fallback[key] ?? String(key);
+  const toggleEnabled = () => {
+    const next = !enabled;
+    setEnabled(next);
+    writeEnabled(next);
+    if (!next) setOpen(false);
+  };
   const pick = (canonical) => {
     props?.inputActions?.setDraft?.(applyRole(draft, canonical));
     setOpen(false);
   };
+  const switchButton = /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    "button",
+    {
+      type: "button",
+      className: "tribot-role-switch",
+      role: "switch",
+      "aria-checked": enabled,
+      "aria-label": t("switchAria"),
+      title: t("switchAria"),
+      onClick: toggleEnabled,
+      children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-track", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-knob" }) })
+    }
+  );
+  if (!enabled) {
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tribot-role-dock", children: switchButton });
+  }
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "tribot-role-dock", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "button",
@@ -107,6 +149,7 @@ function RoleDock(props) {
         ]
       }
     ),
+    switchButton,
     open && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tribot-role-menu", role: "menu", "aria-label": t("menuAria"), children: ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "button",
       {
@@ -170,6 +213,52 @@ var CSS = `
 .tribot-role-caret {
   font-size: 9px;
   opacity: .55;
+}
+
+.tribot-role-switch {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tribot-role-track {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.tribot-role-switch:hover .tribot-role-track {
+  border-color: var(--dsw-alias-brand-primary);
+}
+
+.tribot-role-switch[aria-checked='true'] .tribot-role-track {
+  border-color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-brand-primary);
+}
+
+.tribot-role-knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-primary);
+  transition: left .12s ease, background .12s ease;
+}
+
+.tribot-role-switch[aria-checked='true'] .tribot-role-knob {
+  left: 15px;
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .tribot-role-menu {
@@ -271,6 +360,7 @@ function apply(ctx) {
       trigger: "#",
       name: "tribot-role",
       candidates(_session, { query }) {
+        if (!isPickerEnabled()) return [];
         const q = query.trim().toLowerCase();
         const rows = q ? ROLES2.filter(
           (role) => role.id.includes(q) || role.name.includes(q) || role.description.includes(q)
