@@ -38,7 +38,7 @@ DSH 输入框左侧会出现一个小胶囊，**不显示 TriBot 字样**：
 ```powershell
 $profile = "$env:USERPROFILE\.dsh\profiles\desktop"
 # 1. 链接本插件
-pnpm --dir $profile add "dsh-tribot-role-picker=link:C:/Users/admin/Desktop/Tribot/dsh-plugins/tribot-role-picker"
+pnpm --dir $profile add "dsh-tribot-role-picker=link:C:/Users/admin/Desktop/Tribot/integrations/dsh-role-picker"
 # 2. 把 dsh-tribot-role-picker 加进 dsh.profile.bundles
 #    编辑 $profile\package.json，在 dsh.profile.bundles 末尾加一行
 ```
@@ -48,7 +48,7 @@ pnpm --dir $profile add "dsh-tribot-role-picker=link:C:/Users/admin/Desktop/Trib
 ```json
 {
   "dependencies": {
-    "dsh-tribot-role-picker": "link:C:/Users/admin/Desktop/Tribot/dsh-plugins/tribot-role-picker"
+    "dsh-tribot-role-picker": "link:C:/Users/admin/Desktop/Tribot/integrations/dsh-role-picker"
   },
   "dsh": {
     "profile": {
@@ -66,7 +66,7 @@ pnpm --dir $profile add "dsh-tribot-role-picker=link:C:/Users/admin/Desktop/Trib
 ## 构建
 
 ```bash
-cd dsh-plugins/tribot-role-picker
+cd integrations/dsh-role-picker
 node build.mjs
 ```
 

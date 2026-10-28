@@ -1,193 +1,151 @@
-# TriBot · 本地 Bot 团队工作台
+# TriBot Bot 团队 · DSH 插件
 
-把任务丢给一支跑在自己电脑上的 Bot 团队：总管拆解、研究员查证、工程师动手、管家巡检、审稿人挑刺。模型、工具、文件、审批都在本机，数据不出门。
+把一支**分工明确的 Bot 团队**装进你的 Agent：选一个角色，就切到那套方法论和输出契约；不用搭多进程、不用写提示词、**还特别省 token**。
 
-![TriBot 主界面](docs/screenshots/app.png)
+一句话：**总管拆解 · 研究员查证 · 工程师动手 · 管家巡检 · 审稿人挑刺**，五个角色装在一个技能里。
 
-## 它是什么
+---
 
-TriBot 不是“又一个聊天框”，而是一个可审计的本地 Agent 工作台：
+## 功能与亮点
 
-- **五个角色**：总管 / 研究员 / 工程师 / 管家 / 审稿人，各有系统提示词、输出契约和默认思考档位
-- **工作区**：一个会话绑定一个目录，可追加多个目录；左侧按工作区分组，像文件夹一样展开/收起
-- **文件侧栏**：直接在左侧「文件」tab 浏览工作区，Markdown / 代码 / 图片 / PDF 在右侧预览
-- **会话标签页**：像文件一样打开、切换、关闭；关闭标签不删除会话
-- **写前检查点**：Bot 覆盖/新建文件前自动快照，右侧「状态」面板可逐文件回滚
-- **审批与沙箱**：只读 / 工作区 / 全权三档；高危命令、外网、MCP 调用逐次审批
-- **真实工具**：读写文件、执行命令、浏览器、桌面自动化、MCP、SKILL.md 技能、定时任务
-- **用量透明**：上轮/本会话 token、缓存命中率；设置里有按模型的饼图
-- **多供应商**：GLM、MiniMax、DeepSeek 内置；任意 OpenAI 兼容供应商可自己加
+- **一次安装，五种专精**：一个 `SKILL.md` 里塞了五套完整方法论（怎么做、什么算合格、不能做什么）和五套输出契约。选角色 = 换工作模式，不是换模型。
+- **输出结构固定，可直接交付**：每条回复都按「结论 / 依据 / 未完成 / 下一步」这类结构落地，不用再手工整理一遍。
+- **省 token 有实测**：长工具输出落盘、长会话摘要压缩、稳定前缀吃缓存、重复调用提醒——综合场景实测 **省 88.3%**，¥0.425 → ¥0.050。
+- **零配置**：纯指令型插件，不联网、不写文件、不需要任何密钥或环境变量，装完即用。
+- **跨客户端同一份文件**：`SKILL.md` 同时写了 `when_to_use`（ZCode）与 `whenToUse`（DSH）两个字段，DSH / ZCode / 任意兼容 Agent 都能用。
+- **可选的可视化选角**：装上附带的 DSH 客户端插件，输入框旁会出现「选择角色」胶囊，点一下就选，不用记命令。
 
-![文件侧栏与 Markdown 预览](docs/screenshots/files.png)
+## 五个角色
 
-## 省 token 做了什么
+| 角色 | 专精 | 典型交付 |
+|---|---|---|
+| 🧭 **总管** | 任务拆解、并行分派、验收与合并；**不亲自调研、不亲自写码** | 结论 + 依据 + 未完成 + 下一步建议 |
+| 🔍 **研究员** | 多角度检索、A/B/C 来源分级、交叉验证、冲突裁决 | 带链接与日期的要点清单，标出不确定项 |
+| 🛠 **工程师** | 先读后写、最小改动、写完必验、失败贴原始报错 | 改动清单 + 实际验证输出 + 风险与回滚方式 |
+| ⏰ **管家** | 巡检清单化、阈值判级、只报变化不写长文 | 200 字内的状态 / 异常 / 建议 |
+| 🧪 **审稿人** | 结论与证据一致性、引用可信度、边界与可执行性、查夸大 | 通过 / 需修改 / 拒绝 + 分级问题清单 |
+| 👥 **团队** | 总管拆解 → 专家并行 → 审稿人验收 → 总管交付 | 完整流水线产物（同一 Agent 内按角色切换） |
 
-TriBot 的取舍是「固定前缀小 + 长内容不硬塞」。实测（cl100k_base，真实仓库文件 / 真实 Bot 配置 / 真实工具 Schema）：
+每个角色都有自己的**质量门槛**与**硬边界**：不编造来源与数字、没权限就直说、破坏性操作先审批、失败不硬闯。
+
+## 省 token 怎么省的
+
+实测环境：本仓库真实文件、真实工具 Schema，tokenizer 为 cl100k_base（不同供应商 tokenizer 有 ±10% 差异）。
 
 | 场景 | 不处理 | TriBot | 省 |
 |---|---:|---:|---:|
-| 固定前缀（system + 17 个工具 Schema + 30 个技能名） | — | **2,731 tokens** | Claude Code 约 12,200 |
-| 读 3,705 行 `pnpm-lock.yaml` | 56.2k | 1.1k | **98.1%** |
-| `cat` 打包产物（61,158 行） | 615.3k | 626 | **99.9%** |
+| 读 3,705 行 lockfile | 56.2k | 1.1k | **98.1%** |
+| `cat` 61,158 行打包产物 | 615.3k | 626 | **99.9%** |
 | 40 条历史对话压缩 | 12.7k | 5.2k | **58.8%** |
 | 30 轮 + 3 次大输出 + 6 次重复调用 | 849.4k | 99.3k | **88.3%**（¥0.425 → ¥0.050） |
 
-具体机制：
+四个机制：
 
-1. **长工具输出落盘**：超过 6,000 字符不整段塞回上下文，只回填头 1,800 + 尾 300 字符，给模型一个 `expand_output(id)` 读回原文的把手。既不爆窗口，也不丢信息。
-2. **分段读文件**：`read_file` 默认最多 2,000 行 / 200KB，长文件用 `offset/limit` 翻页，而不是一口气灌进去。
-3. **上下文压缩**：长会话保留最近消息 + 摘要；压缩后的原文仍可从工具输出存档读回。
-4. **稳定前缀吃缓存**：系统提示按「人设 → 技能 → 任务卡 → 摘要 → 时间/环境」排序，把每分钟变化的时间戳放到最后，让多轮请求的前缀尽量不变；30 轮实测缓存再省 44.5%。
-5. **重复调用提醒**：同一工具 + 同一参数第 3/5/8 次调用时提醒换思路，减少原地打转烧 token。
+1. **长工具输出落盘**：超过 6,000 字符不整段塞回上下文，只回填头尾，并给模型一个把手按需读回原文——既不爆窗口也不丢信息。
+2. **长会话摘要压缩**：保留最近对话 + 摘要，原文仍可回读。
+3. **稳定前缀吃缓存**：系统提示按「人设 → 技能 → 任务卡 → 摘要 → 时间/环境」排序，把每分钟变化的时间戳放到最后，多轮请求前缀尽量不变（30 轮再省 44.5%）。
+4. **重复调用提醒**：同一工具同一参数第 3/5/8 次时提醒换思路，少烧无效 token。
 
-> 这些数字来自本仓库的 `pnpm bench` 实测，不是营销估算；不同 tokenizer / 供应商会有 ±10% 差异。完整数据与复现方式见 [docs/token-benchmark.md](docs/token-benchmark.md)，竞品对比见 [docs/positioning.md](docs/positioning.md)。
+> 这些数字来自本仓库的 `pnpm bench` 实测脚本，可复现；完整数据见 [docs/token-benchmark.md](docs/token-benchmark.md)。
 
-## 快速开始
+## 安装
 
-要求：**Node.js >= 22.5**、**pnpm >= 10**（仓库使用 pnpm 12.6）。
+**方式一：插件市场一键装**（推荐）
 
-```bash
-pnpm install
-pnpm dev
-```
+在 DSH 的插件市场搜索 `TriBot`，点安装即可。市场安装会把它放进 Agent 的技能目录。
 
-首次启动：
-
-1. 三步引导（介绍 → 配置模型 → 选任务文件夹）
-2. 到 **设置 → 模型与凭证** 填 API Key（推荐；Key 只存在本机）
-3. 新建会话，直接把任务丢给总管
-
-只启动本地 server：
+**方式二：手动 clone**
 
 ```bash
-pnpm dev:server
-# 浏览器打开 http://127.0.0.1:47615/
+# DSH / 通用 Agent 技能目录
+git clone --depth 1 https://github.com/P3NN4L/Tribot.git ~/.agents/skills/tribot
+
+# 或 DSH 专用目录
+git clone --depth 1 https://github.com/P3NN4L/Tribot.git ~/.dsh/skills/tribot
 ```
 
-> 仓库**不包含任何 API Key**。`data/`、`.env`、`credentials.json` 等均被 `.gitignore` 排除。
+装完目录里要有 `SKILL.md`（仓库根目录就是它），重启 / 重新加载 Agent 即可。
 
-## 常用命令
+## 使用示例
 
-| 命令 | 作用 |
-|---|---|
-| `pnpm dev` | 桌面 App（Electron + 本地 server） |
-| `pnpm dev:server` | 只启动本地 server，浏览器访问 |
-| `pnpm dev:web` | 只启动 Vite 渲染层 |
-| `pnpm test` | 全部单测 |
-| `pnpm typecheck` | 全仓类型检查 |
-| `pnpm cli -- chat` | 命令行聊天（`tb`） |
-| `pnpm package` | Windows Electron 便携版 → `release/` |
-| `pnpm package:native` | Windows 原生壳（C# + WebView2）→ `release/TriBotNative` |
-| `pnpm package:targets` | 生成下载站产物（Windows / macOS / Linux） |
-
-## 架构
+直接点名角色：
 
 ```
-packages/
-├── core/     引擎：模型网关、路由、配额、工具执行、审批门、沙箱、
-│             上下文压缩、SKILL.md、MCP、Routine
-├── server/   Fastify REST + SSE，只监听 127.0.0.1
-├── app/      Electron 主进程 + React 工作台 + 原生壳资源
-├── cli/      tb 命令行（零依赖 HTTP 客户端）
-└── shared/   三端共享类型与协议
-shell/        Windows C# + WebView2 原生壳 / macOS·Linux Python + 系统 WebView
-site/         静态下载页
-scripts/      打包、基准、评测
-docs/         安全、角色、设计、原生壳说明
+/tribot 总管
 ```
 
-数据流：
-
 ```
-UI → 本地 server(127.0.0.1) → 引擎（路由 / 工具循环 / 审批）
-   → SQLite(data/tribot.db) + 工作区文件 + 凭证密文
+/tribot 工程师 把这个构建错误修好并给出验证输出
 ```
 
-## 会话与工作区
-
-- 会话按工作区分组；文件夹头 `+` 直接在该工作区新建会话
-- 会话标题在首轮后由模型总结生成，不再截取第一句话；双击或右键可重命名
-- 自定义标题写入 `meta.titleSource = custom`，之后不会被自动覆盖
-- 会话标签页持久化；关闭标签只关视图，不删会话
-
-## 安全
-
-- API Key 使用 **AES-256-GCM** 加密存 `data/credentials.json`
-- 桌面版主密钥由系统 DPAPI / Keychain（Electron safeStorage）保护；纯 Node 模式用本机 `.localkey` 兜底
-- 界面只回显 `…尾号`，不返回完整 Key
-- 服务只绑定 `127.0.0.1`
-- 文件读写锁在会话工作区内；路径越界直接拒绝
-- 高危动作逐次审批，授权可限定「本会话 / 总是」，设置里可撤销
-- 发布包不包含 `data/`、`.env`、`credentials.json`
-
-完整说明：[docs/security.md](docs/security.md)
-
-## 原生壳（不用 Electron）
-
-| 平台 | 实现 | 状态 |
-|---|---|---|
-| Windows | C# WinForms + WebView2，原生标题栏 | 已构建 |
-| macOS | Python + WKWebView | 源码包 |
-| Linux | Python + WebKitGTK | 源码包 |
-
-```bash
-pnpm package:native
-# release/TriBotNative/TriBotShell.exe
+```
+/tribot 研究员 查一下这个说法有没有一手来源
 ```
 
-macOS / Linux 需要各自平台编译与签名，仓库提供 `shell/tribot_shell.py` 与安装说明。详见 [docs/native-shell.md](docs/native-shell.md)。
-
-## 测试与质量
-
-```bash
-pnpm test        # 165+ 单测：路由/沙箱/审批/凭证/压缩/工具/检查点
-pnpm typecheck
-```
-
-关键设计：
-
-- 所有 Bot 默认拥有全部工具（`["*","assign"]`），风险由沙箱与审批兜底
-- 写文件前先 `read_file`，避免盲写覆盖
-- 工具输出过长自动落盘，模型可用 `expand_output` 读回
-- 同一工具重复调用会提醒换思路
-- 输出截断自动续写，不会直接失败
-
-## DSH 角色选择器
-
-DSH 里装一个客户端插件后，输入框左侧会多一个 **「选择角色」** 胶囊，点开即可选：
+不点名时它会先给你一张菜单，你回编号即可：
 
 ```
-[ 选择角色 ▾ ]
-    → 总管 / 研究员 / 工程师 / 管家 / 审稿人 / 团队
-```
-
-颜色、亮/暗外观和语言跟随 DSH 设置；选完自动插入 `/tribot 工程师 `，也保留 `#` 快捷键。源码：[`dsh-plugins/tribot-role-picker`](dsh-plugins/tribot-role-picker/)。这是 DSH 客户端插件，不依赖 `SKILL.md` 的菜单。
-
-## 在 ZCode / DSH 里使用 TriBot 的 Bot
-
-TriBot 的五个角色合并成了一个技能，源文件在 [`zcode-skills/tribot/SKILL.md`](zcode-skills/tribot/SKILL.md)。ZCode 和 DSH 共用同一份内容（同时写了 `when_to_use` 与 `whenToUse`）。
-
-**ZCode**
-
-```bash
-cp -R zcode-skills/tribot ~/.zcode/skills/
-```
-
-**DSH（DeepSeek Harness）**
-
-```bash
-cp -R zcode-skills/tribot ~/.dsh/skills/
-```
-
-加载 `tribot` 后会先让你选角色：
-
-```
+选一个 Bot：
 1. 🧭 总管   2. 🔍 研究员   3. 🛠 工程师
 4. ⏰ 管家   5. 🧪 审稿人   6. 👥 团队
 ```
 
-回复编号或名字即可；也可以直接说「用工程师」。技能只是指令，不含可执行代码或 API Key。
-详见 [zcode-skills/README.md](zcode-skills/README.md) 和 [dsh-skills/README.md](dsh-skills/README.md)。
+选定后，**每条回复第一行都会标出当前角色**，方便你和它对齐：
+
+```
+> 🛠 **当前角色：工程师** · TriBot 3/6
+```
+
+## 配置
+
+**不需要任何配置。** 没有环境变量、没有密钥、没有后台服务。
+
+角色指令只在你显式调用时加载，不占常驻上下文；这也是它省 token 的原因之一。
+
+## 附：可视化选角插件（可选）
+
+仓库里的 [`integrations/dsh-role-picker`](integrations/dsh-role-picker/) 是一个 DSH 客户端插件，装上后 DSH 输入框旁会出现：
+
+```
+[ 选择角色 ▾ ]
+```
+
+点开就是六个角色，选完自动填入 `/tribot 工程师 `。颜色、亮暗外观、语言跟随 DSH 设置。
+
+```bash
+# 在 DSH profile 里链接这个插件
+pnpm --dir ~/.dsh/profiles/desktop add "dsh-tribot-role-picker=link:<你的路径>/integrations/dsh-role-picker"
+```
+
+## 仓库里还有什么
+
+这个仓库同时是 **TriBot 桌面版**（本地 Bot 团队工作台）的 monorepo：Electron + Windows 原生壳、会话工作区、文件预览、检查点回滚、权限审批、用量统计。桌面端的说明见 [docs/tribot-desktop.md](docs/tribot-desktop.md)。
+
+目录：
+
+```
+SKILL.md                     # 这个插件本体（市场收录的就是它）
+skills/                      # 其它技能（设计系统等）
+integrations/dsh-role-picker # 可视化选角的 DSH 客户端插件
+packages/                    # core / server / app / cli / shared
+docs/                        # 文档、实测数据、设计说明
+```
+
+## 开发
+
+```bash
+pnpm install
+pnpm test        # 单测
+pnpm typecheck   # 类型检查
+pnpm bench       # 重新跑省 token 实测
+```
+
+改完技能记得同步已安装的副本：
+
+```bash
+cp SKILL.md ~/.dsh/skills/tribot/SKILL.md
+cp SKILL.md ~/.zcode/skills/tribot/SKILL.md
+```
 
 ## License
 

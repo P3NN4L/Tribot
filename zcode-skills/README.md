@@ -2,6 +2,8 @@
 
 一个技能，五个 Bot 角色。加载后先让你选角色，再按对应方法论执行。
 
+> 技能本体就是仓库根目录的 [`SKILL.md`](../SKILL.md)（DSH / ZCode / 其它兼容 Agent 共用同一份）。
+
 | 编号 | 角色 | 用途 |
 |---|---|---|
 | 1 | 🧭 总管 | 拆解、五段分派、合并、验收 |
@@ -23,25 +25,25 @@ ZCode 会扫描以下位置（优先级从高到低）：
 ### Windows PowerShell
 
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.zcode\skills" | Out-Null
-Copy-Item -Recurse zcode-skills\tribot "$env:USERPROFILE\.zcode\skills\"
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.zcode\skills\tribot" | Out-Null
+Copy-Item SKILL.md "$env:USERPROFILE\.zcode\skills\tribot\SKILL.md"
 ```
 
 ### macOS / Linux
 
 ```bash
-mkdir -p ~/.zcode/skills
-cp -R zcode-skills/tribot ~/.zcode/skills/
+mkdir -p ~/.zcode/skills/tribot
+cp SKILL.md ~/.zcode/skills/tribot/SKILL.md
 ```
 
 只装到某个项目：
 
 ```bash
-mkdir -p .zcode/skills
-cp -R zcode-skills/tribot .zcode/skills/
+mkdir -p .zcode/skills/tribot
+cp SKILL.md .zcode/skills/tribot/SKILL.md
 ```
 
-重启 ZCode 或重新加载技能后，在 **Settings → Skills** 或输入框的 `/` 菜单里应能看到 `tribot`。
+装完后在 ZCode 的 **Settings → Skills** 或输入框的 `/` 菜单里加载 `tribot`。
 
 ## 使用
 
@@ -71,20 +73,6 @@ cp -R zcode-skills/tribot .zcode/skills/
 ## 说明
 
 - 这是**指令型技能**，不是子代理；选 6 也不会起五个进程，只是让同一个 Agent 按团队流水线工作。
-- 不包含任何 API Key、token、内部地址或可执行脚本。
+- 不包含任何密钥、token、内部地址或可执行脚本。
 - 破坏性操作仍由 ZCode 的权限/审批机制约束。
-- ZCode 的 skill 参数不会注入正文，所以“选角色”走对话确认，而不是命令行参数。
-
-## 格式
-
-```yaml
----
-name: tribot
-description: ...
-when_to_use: ...
-license: MIT
-metadata: roles=dispatcher,researcher,engineer,steward,reviewer; source=TriBot
----
-```
-
-描述控制在 1024 字符内，并明确写“什么时候用”，模型才会在合适的时候触发。
+- ZCode 的 skill 参数不会注入正文，所以「选角色」走对话确认，而不是命令行参数。
