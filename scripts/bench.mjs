@@ -13,7 +13,12 @@ await esbuild.build({
   format: 'cjs',
   target: 'node22',
   outfile,
+  external: ['playwright-core', 'chromium-bidi', 'chromium-bidi/*'],
   logLevel: 'error',
 });
-const r = spawnSync(process.execPath, [outfile], { cwd: root, stdio: 'inherit' });
+const r = spawnSync(process.execPath, [outfile], {
+  cwd: root,
+  stdio: 'inherit',
+  env: { ...process.env, NODE_PATH: path.join(root, 'packages/app/node_modules') },
+});
 process.exit(r.status ?? 1);
