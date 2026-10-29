@@ -25,15 +25,6 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 
-// src/client/pm.ts
-var pluginManager;
-function setPluginManager(handle) {
-  pluginManager = handle ?? void 0;
-}
-function getPluginManager() {
-  return pluginManager;
-}
-
 // src/client/RoleDock.tsx
 var import_react = require("react");
 
@@ -44,8 +35,6 @@ var zh = {
   "chooseAria": "\u9009\u62E9 TriBot \u89D2\u8272",
   "menuAria": "TriBot \u89D2\u8272",
   "switchAria": "\u542F\u7528\u6216\u505C\u7528 TriBot \u89D2\u8272\u9009\u62E9",
-  "restartNote": "\u91CD\u542F DSH \u540E\u5B8C\u5168\u505C\u7528",
-  "softOffNote": "\u5DF2\u505C\u7528\uFF08\u63D2\u4EF6\u7BA1\u7406\u4E0D\u53EF\u7528\uFF0C\u4EC5\u672C\u6B21\u754C\u9762\u751F\u6548\uFF09",
   "role.dispatcher": "\u603B\u7BA1",
   "role.dispatcher.desc": "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536",
   "role.researcher": "\u7814\u7A76\u5458",
@@ -64,8 +53,6 @@ var en = {
   "chooseAria": "Choose a TriBot role",
   "menuAria": "TriBot roles",
   "switchAria": "Enable or disable the TriBot role picker",
-  "restartNote": "Restart DSH to fully disable",
-  "softOffNote": "Disabled (plugin manager unavailable; UI-only this session)",
   "role.dispatcher": "Dispatcher",
   "role.dispatcher.desc": "Split, assign, merge, accept",
   "role.researcher": "Researcher",
@@ -114,7 +101,6 @@ function applyRole(draft, canonical) {
 function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
   const [enabled, setEnabled] = (0, import_react.useState)(readEnabled);
-  const [physical, setPhysical] = (0, import_react.useState)("unknown");
   const draft = props?.input?.draft ?? "";
   const matched = draft.match(/^\/tribot\s+(\S+)/u);
   const active = ROLES.find((role) => role.canonical === matched?.[1]);
@@ -124,29 +110,16 @@ function RoleDock(props) {
   const toggleEnabled = () => {
     const next = !enabled;
     setEnabled(next);
-    setPhysical("unknown");
     writeEnabled(next);
     if (!next) {
       setOpen(false);
       try {
+        const draft2 = props?.input?.draft ?? "";
         const marker = "[TriBot \u89D2\u8272\u5DF2\u505C\u7528\uFF0C\u9000\u51FA\u5F53\u524D\u89D2\u8272\uFF0C\u6062\u590D\u9ED8\u8BA4\u52A9\u624B\u6A21\u5F0F]";
-        if (!draft.includes("[TriBot \u89D2\u8272\u5DF2\u505C\u7528")) {
-          props?.inputActions?.setDraft?.(draft + marker);
+        if (!draft2.includes("[TriBot \u89D2\u8272\u5DF2\u505C\u7528")) {
+          props?.inputActions?.setDraft?.(draft2 + marker);
         }
       } catch {
-      }
-      const pm = getPluginManager();
-      if (pm?.setBundleEnabled) {
-        void Promise.resolve().then(() => pm.setBundleEnabled("dsh-tribot-role-picker", false)).then((res) => {
-          if (res?.application === "applied") {
-            setPhysical("applied");
-            writeEnabled(true);
-          } else if (res?.application === "restart-required") {
-            setPhysical("restart-required");
-          } else {
-            setPhysical("failed");
-          }
-        }).catch(() => setPhysical("failed"));
       }
     }
   };
@@ -168,11 +141,7 @@ function RoleDock(props) {
     }
   );
   if (!enabled) {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "tribot-role-dock", children: [
-      switchButton,
-      physical === "restart-required" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-note", children: t("restartNote") }),
-      physical === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "tribot-role-note", children: t("softOffNote") })
-    ] });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tribot-role-dock", children: switchButton });
   }
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "tribot-role-dock", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
@@ -302,11 +271,6 @@ var CSS = `
   background: var(--dsw-alias-bg-layer-1);
 }
 
-.tribot-role-note {
-  color: var(--dsw-alias-label-secondary, var(--dsw-alias-label-primary));
-  font-size: 11px;
-  opacity: .6;
-}
 
 .tribot-role-menu {
   position: absolute;
@@ -396,11 +360,6 @@ function apply(ctx) {
   const locale = ctx.locale;
   if (locale?.register) {
     ctx.effect(() => locale.register(NS, { zh, en }), "tribot-role-picker: dictionaries");
-  }
-  try {
-    setPluginManager(ctx?.reflect?.get?.("remote.pluginManager"));
-  } catch {
-    setPluginManager(void 0);
   }
   const inputTriggers = ctx.get("inputTriggers");
   if (!inputTriggers?.registerSource) {

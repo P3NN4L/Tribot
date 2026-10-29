@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { en, zh } from './locales'
-import { getPluginManager } from './pm'
 
 interface Role {
   id: string
@@ -48,13 +47,13 @@ function applyRole(draft: string, canonical: string): string {
  * Visible role picker in the composer dock. The pill sits on the chatbox's
  * left edge (same clearance/max-width as the composer card), follows the DSH
  * theme tokens and locale, and writes `/tribot <role> ` into the draft.
- * A switch next to the pill turns the picker (and the `#` trigger) on/off;
- * the choice persists in localStorage.
+ * A switch next to the pill turns the picker UI (and the `#` trigger) on/off;
+ * the plugin itself stays installed and listed — off only hides the UI and
+ * cancels the active role via a draft marker.
  */
 export function RoleDock(props: any) {
   const [open, setOpen] = useState(false)
   const [enabled, setEnabled] = useState(readEnabled)
-  const [physical, setPhysical] = useState<'unknown' | 'applied' | 'restart-required' | 'failed'>('unknown')
   const draft: string = props?.input?.draft ?? ''
   const matched = draft.match(/^\/tribot\s+(\S+)/u)
   const active = ROLES.find((role) => role.canonical === matched?.[1])
@@ -68,38 +67,19 @@ export function RoleDock(props: any) {
   const toggleEnabled = () => {
     const next = !enabled
     setEnabled(next)
-    setPhysical('unknown')
     writeEnabled(next)
     if (!next) {
       setOpen(false)
-      // 立即退出角色：往草稿填入停用标记，发送后模型按协议退出
+      // 立即退出角色：往草稿填入停用标记，发送后模型按协议退出。
+      // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。
       try {
+        const draft: string = props?.input?.draft ?? ''
         const marker = '[TriBot 角色已停用，退出当前角色，恢复默认助手模式]'
         if (!draft.includes('[TriBot 角色已停用')) {
           props?.inputActions?.setDraft?.(draft + marker)
         }
       } catch {
         /* 无法写草稿时仅停用 UI */
-      }
-      // 物理停用：通过 plugin-manager 把本 bundle 从 profile 摘除并卸载
-      // （技能注册表随之销毁，/tribot 从菜单消失）。成功后本插件的 UI 也会
-      // 一起卸载；恢复走 DSH「设置 → 插件」页。
-      const pm = getPluginManager()
-      if (pm?.setBundleEnabled) {
-        void Promise.resolve()
-          .then(() => pm.setBundleEnabled('dsh-tribot-role-picker', false))
-          .then((res: any) => {
-            if (res?.application === 'applied') {
-              // 已物理卸载：清掉软状态，将来从插件页重新启用时默认为开
-              setPhysical('applied')
-              writeEnabled(true)
-            } else if (res?.application === 'restart-required') {
-              setPhysical('restart-required')
-            } else {
-              setPhysical('failed')
-            }
-          })
-          .catch(() => setPhysical('failed'))
       }
     }
   }
@@ -127,17 +107,7 @@ export function RoleDock(props: any) {
 
   if (!enabled) {
     // 停用态：胶囊和菜单都隐藏，只留开关本身，方便再打开
-    return (
-      <div className="tribot-role-dock">
-        {switchButton}
-        {physical === 'restart-required' && (
-          <span className="tribot-role-note">{t('restartNote')}</span>
-        )}
-        {physical === 'failed' && (
-          <span className="tribot-role-note">{t('softOffNote')}</span>
-        )}
-      </div>
-    )
+    return <div className="tribot-role-dock">{switchButton}</div>
   }
 
   return (
