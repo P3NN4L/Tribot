@@ -1,5 +1,7 @@
 # TriBot Bot 团队 · DSH 插件
 
+[![DSH Market](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
+
 把一支**分工明确的 Bot 团队**装进你的 Agent：选一个角色，就切到那套方法论和输出契约；不用搭多进程、不用写提示词、**还特别省 token**。
 
 一句话：**总管拆解 · 研究员查证 · 工程师动手 · 管家巡检 · 审稿人挑刺**，五个角色装在一个技能里。
