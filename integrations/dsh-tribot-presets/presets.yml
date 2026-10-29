@@ -1,0 +1,56 @@
+# ============ TriBot 角色预设（层 2） ============
+# 复制本段到 profile 的 cordis.patch.yml 末尾
+# （%USERPROFILE%\.dsh\profiles\desktop\cordis.patch.yml）
+# 同时确认 package.json 的 dsh.profile.bundles 已包含 dsh-tribot-team
+
+# ---- 5 份角色预设 ----
+- id: preset-tribot-dispatcher
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: tribot-dispatcher
+    name: TriBot 总管
+    description: 拆解、五段分派、合并、验收
+    plugins:
+      - name: dsh-tribot-team
+- id: preset-tribot-researcher
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: tribot-researcher
+    name: TriBot 研究员
+    description: 多角度检索、来源分级、交叉验证
+    plugins:
+      - name: dsh-tribot-team
+- id: preset-tribot-engineer
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: tribot-engineer
+    name: TriBot 工程师
+    description: 读改文件、跑命令、验证、失败上报
+    plugins:
+      - name: dsh-tribot-team
+- id: preset-tribot-steward
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: tribot-steward
+    name: TriBot 管家
+    description: 巡检、阈值判级、异常简报
+    plugins:
+      - name: dsh-tribot-team
+- id: preset-tribot-reviewer
+  name: '@deepseek-ai/dsh-agent-preset'
+  config:
+    id: tribot-reviewer
+    name: TriBot 审稿人
+    description: 对抗审查：结论/引用/边界/可执行性
+    plugins:
+      - name: dsh-tribot-team
+
+# ---- 子代理工具白名单：允许模型委派时选择以上预设 ----
+# 找到组合里 subagent 工具的条目（id 通常为 subagent 或类似），按 id 写覆盖：
+# 在其 config 中加：
+#   allowedAgentPresets:
+#     - tribot-dispatcher
+#     - tribot-researcher
+#     - tribot-engineer
+#     - tribot-steward
+#     - tribot-reviewer
