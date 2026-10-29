@@ -99,8 +99,12 @@ var ROLES = [
   { id: "team", canonical: "\u56E2\u961F", emoji: "\u{1F465}" }
 ];
 var GLOBAL_KEY = "tribot-role-picker:enabled";
+var ROLE_KEY = "tribot-role-picker:role";
 function sessionKey(sessionId) {
   return sessionId ? `${GLOBAL_KEY}:session:${sessionId}` : GLOBAL_KEY;
+}
+function roleSessionKey(sessionId) {
+  return sessionId ? `${ROLE_KEY}:session:${sessionId}` : ROLE_KEY;
 }
 function readEnabled(sessionId) {
   try {
@@ -120,6 +124,25 @@ function writeEnabled(sessionId, value) {
   } catch {
   }
 }
+function readRole(sessionId) {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    if (sessionId) {
+      const own = localStorage.getItem(roleSessionKey(sessionId));
+      if (own) return own;
+    }
+    return localStorage.getItem(ROLE_KEY);
+  } catch {
+    return null;
+  }
+}
+function writeRole(sessionId, canonical) {
+  try {
+    if (sessionId) localStorage.setItem(roleSessionKey(sessionId), canonical);
+    localStorage.setItem(ROLE_KEY, canonical);
+  } catch {
+  }
+}
 function isPickerEnabled(sessionId) {
   return readEnabled(sessionId);
 }
@@ -131,6 +154,7 @@ function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
   const sessionId = props?.sessionId;
   const [enabled, setEnabled] = (0, import_react.useState)(() => readEnabled(sessionId));
+  const [lastRole, setLastRole] = (0, import_react.useState)(() => readRole(sessionId));
   const [stats, setStats] = (0, import_react.useState)(null);
   (0, import_react.useEffect)(() => {
     let stop = false;
@@ -147,10 +171,13 @@ function RoleDock(props) {
   }, []);
   (0, import_react.useEffect)(() => {
     setEnabled(readEnabled(sessionId));
+    setLastRole(readRole(sessionId));
   }, [sessionId]);
   const draft = props?.input?.draft ?? "";
   const matched = draft.match(/^\/tribot\s+(\S+)/u);
-  const active = ROLES.find((role) => role.canonical === matched?.[1]);
+  const fromDraft = ROLES.find((role) => role.canonical === matched?.[1]);
+  const lastRoleState = ROLES.find((role) => role.canonical === lastRole);
+  const active = fromDraft ?? lastRoleState;
   const isZh = String(props?.locale ?? (typeof navigator === "undefined" ? "" : navigator.language)).toLowerCase().startsWith("zh");
   const fallback = isZh ? zh : en;
   const t = (key) => props?.t?.(key) ?? fallback[key] ?? String(key);
@@ -158,19 +185,10 @@ function RoleDock(props) {
     const next = !enabled;
     setEnabled(next);
     writeEnabled(sessionId, next);
-    if (!next) {
-      setOpen(false);
-      try {
-        const draft2 = props?.input?.draft ?? "";
-        const marker = "[TriBot \u89D2\u8272\u5DF2\u505C\u7528\uFF0C\u9000\u51FA\u5F53\u524D\u89D2\u8272\uFF0C\u6062\u590D\u9ED8\u8BA4\u52A9\u624B\u6A21\u5F0F]";
-        if (!draft2.includes("[TriBot \u89D2\u8272\u5DF2\u505C\u7528")) {
-          props?.inputActions?.setDraft?.(draft2 + marker);
-        }
-      } catch {
-      }
-    }
   };
   const pick = (canonical) => {
+    writeRole(sessionId, canonical);
+    setLastRole(canonical);
     props?.inputActions?.setDraft?.(applyRole(draft, canonical));
     setOpen(false);
   };

@@ -40,9 +40,14 @@ const ROLES: readonly Role[] = [
 ]
 
 const GLOBAL_KEY = 'tribot-role-picker:enabled'
+const ROLE_KEY = 'tribot-role-picker:role'
 
 function sessionKey(sessionId?: string): string {
   return sessionId ? `${GLOBAL_KEY}:session:${sessionId}` : GLOBAL_KEY
+}
+
+function roleSessionKey(sessionId?: string): string {
+  return sessionId ? `${ROLE_KEY}:session:${sessionId}` : ROLE_KEY
 }
 
 /** Per-session state overrides the global default; new sessions inherit the default (on). */
@@ -67,6 +72,29 @@ function writeEnabled(sessionId: string | undefined, value: boolean): void {
   }
 }
 
+/** 上次选的角色：会话级优先，全局兜底（新会话沿用上一个对话的角色）。 */
+function readRole(sessionId?: string): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null
+    if (sessionId) {
+      const own = localStorage.getItem(roleSessionKey(sessionId))
+      if (own) return own
+    }
+    return localStorage.getItem(ROLE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeRole(sessionId: string | undefined, canonical: string): void {
+  try {
+    if (sessionId) localStorage.setItem(roleSessionKey(sessionId), canonical)
+    localStorage.setItem(ROLE_KEY, canonical)
+  } catch {
+    /* 持久化失败不致命 */
+  }
+}
+
 export function isPickerEnabled(sessionId?: string): boolean {
   return readEnabled(sessionId)
 }
@@ -80,14 +108,16 @@ function applyRole(draft: string, canonical: string): string {
  * Visible role picker in the composer dock. The pill sits on the chatbox's
  * left edge (same clearance/max-width as the composer card), follows the DSH
  * theme tokens and locale, and writes `/tribot <role> ` into the draft.
+ * The picked role is remembered per session (global last-role as fallback for
+ * new sessions), so the pill keeps showing it after the draft is sent.
  * A switch next to the pill turns the picker UI (and the `#` trigger) on/off;
- * the plugin itself stays installed and listed — off only hides the UI and
- * cancels the active role via a draft marker.
+ * the plugin itself stays installed and listed.
  */
 export function RoleDock(props: any) {
   const [open, setOpen] = useState(false)
   const sessionId: string | undefined = props?.sessionId
   const [enabled, setEnabled] = useState(() => readEnabled(sessionId))
+  const [lastRole, setLastRole] = useState(() => readRole(sessionId))
   // 实时省 token 统计（来自 save-token 插件的官方 dashboard API）
   const [stats, setStats] = useState<SaveTokenStats | null>(null)
   useEffect(() => {
@@ -100,13 +130,16 @@ export function RoleDock(props: any) {
     const timer = setInterval(tick, 5000)
     return () => { stop = true; clearInterval(timer) }
   }, [])
-  // 会话切换时重读该会话自己的开关记忆
+  // 会话切换时重读该会话自己的开关记忆与角色
   useEffect(() => {
     setEnabled(readEnabled(sessionId))
+    setLastRole(readRole(sessionId))
   }, [sessionId])
   const draft: string = props?.input?.draft ?? ''
   const matched = draft.match(/^\/tribot\s+(\S+)/u)
-  const active = ROLES.find((role) => role.canonical === matched?.[1])
+  const fromDraft = ROLES.find((role) => role.canonical === matched?.[1])
+  const lastRoleState = ROLES.find((role) => role.canonical === lastRole)
+  const active = fromDraft ?? lastRoleState
 
   const isZh = String(props?.locale ?? (typeof navigator === 'undefined' ? '' : navigator.language))
     .toLowerCase()
@@ -118,23 +151,13 @@ export function RoleDock(props: any) {
     const next = !enabled
     setEnabled(next)
     writeEnabled(sessionId, next)
-    if (!next) {
-      setOpen(false)
-      // 立即退出角色：往草稿填入停用标记，发送后模型按协议退出。
-      // 开关是每会话记忆：只影响当前会话，其他会话互不影响。
-      try {
-        const draft: string = props?.input?.draft ?? ''
-        const marker = '[TriBot 角色已停用，退出当前角色，恢复默认助手模式]'
-        if (!draft.includes('[TriBot 角色已停用')) {
-          props?.inputActions?.setDraft?.(draft + marker)
-        }
-      } catch {
-        /* 无法写草稿时仅停用 UI */
-      }
-    }
+    // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。
+    // 不再往草稿塞退出标记——角色仅在新消息里生效，关掉后下一条消息自然不再套用。
   }
 
   const pick = (canonical: string) => {
+    writeRole(sessionId, canonical)
+    setLastRole(canonical)
     props?.inputActions?.setDraft?.(applyRole(draft, canonical))
     setOpen(false)
   }
