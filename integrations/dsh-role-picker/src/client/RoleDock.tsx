@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { en, zh } from './locales'
 
 interface Role {
@@ -16,26 +16,36 @@ const ROLES: readonly Role[] = [
   { id: 'team', canonical: '团队', emoji: '👥' },
 ]
 
-const ENABLE_KEY = 'tribot-role-picker:enabled'
+const GLOBAL_KEY = 'tribot-role-picker:enabled'
 
-function readEnabled(): boolean {
+function sessionKey(sessionId?: string): string {
+  return sessionId ? `${GLOBAL_KEY}:session:${sessionId}` : GLOBAL_KEY
+}
+
+/** Per-session state overrides the global default; new sessions inherit the default (on). */
+function readEnabled(sessionId?: string): boolean {
   try {
-    return typeof localStorage === 'undefined' || localStorage.getItem(ENABLE_KEY) !== '0'
+    if (typeof localStorage === 'undefined') return true
+    if (sessionId) {
+      const own = localStorage.getItem(sessionKey(sessionId))
+      if (own !== null) return own !== '0'
+    }
+    return localStorage.getItem(GLOBAL_KEY) !== '0'
   } catch {
     return true
   }
 }
 
-function writeEnabled(value: boolean): void {
+function writeEnabled(sessionId: string | undefined, value: boolean): void {
   try {
-    localStorage.setItem(ENABLE_KEY, value ? '1' : '0')
+    localStorage.setItem(sessionKey(sessionId), value ? '1' : '0')
   } catch {
     /* 私有模式等场景下持久化失败不致命 */
   }
 }
 
-export function isPickerEnabled(): boolean {
-  return readEnabled()
+export function isPickerEnabled(sessionId?: string): boolean {
+  return readEnabled(sessionId)
 }
 
 function applyRole(draft: string, canonical: string): string {
@@ -53,7 +63,12 @@ function applyRole(draft: string, canonical: string): string {
  */
 export function RoleDock(props: any) {
   const [open, setOpen] = useState(false)
-  const [enabled, setEnabled] = useState(readEnabled)
+  const sessionId: string | undefined = props?.sessionId
+  const [enabled, setEnabled] = useState(() => readEnabled(sessionId))
+  // 会话切换时重读该会话自己的开关记忆
+  useEffect(() => {
+    setEnabled(readEnabled(sessionId))
+  }, [sessionId])
   const draft: string = props?.input?.draft ?? ''
   const matched = draft.match(/^\/tribot\s+(\S+)/u)
   const active = ROLES.find((role) => role.canonical === matched?.[1])
@@ -67,11 +82,11 @@ export function RoleDock(props: any) {
   const toggleEnabled = () => {
     const next = !enabled
     setEnabled(next)
-    writeEnabled(next)
+    writeEnabled(sessionId, next)
     if (!next) {
       setOpen(false)
       // 立即退出角色：往草稿填入停用标记，发送后模型按协议退出。
-      // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。
+      // 开关是每会话记忆：只影响当前会话，其他会话互不影响。
       try {
         const draft: string = props?.input?.draft ?? ''
         const marker = '[TriBot 角色已停用，退出当前角色，恢复默认助手模式]'

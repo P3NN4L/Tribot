@@ -49,9 +49,9 @@ export function apply(ctx: Context): void {
       inputTriggers.registerSource({
         trigger: '#',
         name: 'tribot-role',
-        candidates(_session: unknown, { query }: { query: string }) {
-          // 停用开关关闭时，# 菜单不再出现
-          if (!isPickerEnabled()) return []
+        candidates(session: unknown, { query }: { query: string }) {
+          // 停用开关按会话记忆：关闭的那个会话里 # 菜单不再出现
+          if (!isPickerEnabled((session as any)?.sessionId)) return []
           const q = query.trim().toLowerCase()
           const rows = q
             ? ROLES.filter(
@@ -89,6 +89,7 @@ export function apply(ctx: Context): void {
           id: 'tribot-role-picker',
           order: 30,
           locale: NS,
+          inject: (sessionId: string) => ({ sessionId }),
         },
         RoleDock,
       ),

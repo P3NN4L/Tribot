@@ -34,7 +34,7 @@ var zh = {
   "choose": "\u9009\u62E9\u89D2\u8272",
   "chooseAria": "\u9009\u62E9 TriBot \u89D2\u8272",
   "menuAria": "TriBot \u89D2\u8272",
-  "switchAria": "\u542F\u7528\u6216\u505C\u7528 TriBot \u89D2\u8272\u9009\u62E9",
+  "switchAria": "\u542F\u7528\u6216\u505C\u7528 TriBot \u89D2\u8272\u9009\u62E9\uFF08\u4EC5\u5F53\u524D\u4F1A\u8BDD\uFF09",
   "role.dispatcher": "\u603B\u7BA1",
   "role.dispatcher.desc": "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536",
   "role.researcher": "\u7814\u7A76\u5458",
@@ -52,7 +52,7 @@ var en = {
   "choose": "Choose role",
   "chooseAria": "Choose a TriBot role",
   "menuAria": "TriBot roles",
-  "switchAria": "Enable or disable the TriBot role picker",
+  "switchAria": "Enable or disable the TriBot role picker (this session only)",
   "role.dispatcher": "Dispatcher",
   "role.dispatcher.desc": "Split, assign, merge, accept",
   "role.researcher": "Researcher",
@@ -77,22 +77,30 @@ var ROLES = [
   { id: "reviewer", canonical: "\u5BA1\u7A3F\u4EBA", emoji: "\u{1F9EA}" },
   { id: "team", canonical: "\u56E2\u961F", emoji: "\u{1F465}" }
 ];
-var ENABLE_KEY = "tribot-role-picker:enabled";
-function readEnabled() {
+var GLOBAL_KEY = "tribot-role-picker:enabled";
+function sessionKey(sessionId) {
+  return sessionId ? `${GLOBAL_KEY}:session:${sessionId}` : GLOBAL_KEY;
+}
+function readEnabled(sessionId) {
   try {
-    return typeof localStorage === "undefined" || localStorage.getItem(ENABLE_KEY) !== "0";
+    if (typeof localStorage === "undefined") return true;
+    if (sessionId) {
+      const own = localStorage.getItem(sessionKey(sessionId));
+      if (own !== null) return own !== "0";
+    }
+    return localStorage.getItem(GLOBAL_KEY) !== "0";
   } catch {
     return true;
   }
 }
-function writeEnabled(value) {
+function writeEnabled(sessionId, value) {
   try {
-    localStorage.setItem(ENABLE_KEY, value ? "1" : "0");
+    localStorage.setItem(sessionKey(sessionId), value ? "1" : "0");
   } catch {
   }
 }
-function isPickerEnabled() {
-  return readEnabled();
+function isPickerEnabled(sessionId) {
+  return readEnabled(sessionId);
 }
 function applyRole(draft, canonical) {
   const rest = draft.replace(/^\/tribot\s+\S+\s*/u, "");
@@ -100,7 +108,11 @@ function applyRole(draft, canonical) {
 }
 function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
-  const [enabled, setEnabled] = (0, import_react.useState)(readEnabled);
+  const sessionId = props?.sessionId;
+  const [enabled, setEnabled] = (0, import_react.useState)(() => readEnabled(sessionId));
+  (0, import_react.useEffect)(() => {
+    setEnabled(readEnabled(sessionId));
+  }, [sessionId]);
   const draft = props?.input?.draft ?? "";
   const matched = draft.match(/^\/tribot\s+(\S+)/u);
   const active = ROLES.find((role) => role.canonical === matched?.[1]);
@@ -110,7 +122,7 @@ function RoleDock(props) {
   const toggleEnabled = () => {
     const next = !enabled;
     setEnabled(next);
-    writeEnabled(next);
+    writeEnabled(sessionId, next);
     if (!next) {
       setOpen(false);
       try {
@@ -370,8 +382,8 @@ function apply(ctx) {
     () => inputTriggers.registerSource({
       trigger: "#",
       name: "tribot-role",
-      candidates(_session, { query }) {
-        if (!isPickerEnabled()) return [];
+      candidates(session, { query }) {
+        if (!isPickerEnabled(session?.sessionId)) return [];
         const q = query.trim().toLowerCase();
         const rows = q ? ROLES2.filter(
           (role) => role.id.includes(q) || role.name.includes(q) || role.description.includes(q)
@@ -398,7 +410,8 @@ function apply(ctx) {
           name: "conversation.input.dock",
           id: "tribot-role-picker",
           order: 30,
-          locale: NS
+          locale: NS,
+          inject: (sessionId) => ({ sessionId })
         },
         RoleDock
       )
