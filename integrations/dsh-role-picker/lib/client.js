@@ -35,6 +35,9 @@ var zh = {
   "chooseAria": "\u9009\u62E9 TriBot \u89D2\u8272",
   "menuAria": "TriBot \u89D2\u8272",
   "switchAria": "\u542F\u7528\u6216\u505C\u7528 TriBot \u89D2\u8272\u9009\u62E9\uFF08\u4EC5\u5F53\u524D\u4F1A\u8BDD\uFF09",
+  "statsSaved": "\u5DF2\u7701",
+  "statsCache": "\u7F13\u5B58",
+  "statsTitle": "\u672C Harness \u8FD0\u884C\u4EE5\u6765\uFF0C\u5DE5\u5177\u8F93\u51FA\u538B\u7F29/\u53BB\u91CD\u7D2F\u8BA1\u907F\u514D\u7684 token \u4E0E\u7F13\u5B58\u547D\u4E2D\u7387\uFF08\u6570\u636E\u6765\u81EA save-token \u63D2\u4EF6\uFF09",
   "role.dispatcher": "\u603B\u7BA1",
   "role.dispatcher.desc": "\u62C6\u89E3\u3001\u5206\u6D3E\u3001\u5408\u5E76\u3001\u9A8C\u6536",
   "role.researcher": "\u7814\u7A76\u5458",
@@ -53,6 +56,9 @@ var en = {
   "chooseAria": "Choose a TriBot role",
   "menuAria": "TriBot roles",
   "switchAria": "Enable or disable the TriBot role picker (this session only)",
+  "statsSaved": "saved",
+  "statsCache": "cache",
+  "statsTitle": "Tokens avoided by output compression/dedupe and cache hit rate since this harness run (data from the save-token plugin)",
   "role.dispatcher": "Dispatcher",
   "role.dispatcher.desc": "Split, assign, merge, accept",
   "role.researcher": "Researcher",
@@ -69,6 +75,21 @@ var en = {
 
 // src/client/RoleDock.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
+async function fetchStats() {
+  try {
+    if (typeof fetch === "undefined") return null;
+    const res = await fetch("/save-token/api/dashboard", { credentials: "same-origin" });
+    if (!res.ok) return null;
+    const j = await res.json();
+    if (!j || typeof j.reliefPct !== "number") return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
+function fmtTok(n) {
+  return n >= 1e4 ? `${(n / 1e3).toFixed(1)}k` : String(Math.round(n));
+}
 var ROLES = [
   { id: "dispatcher", canonical: "\u603B\u7BA1", emoji: "\u{1F9ED}" },
   { id: "researcher", canonical: "\u7814\u7A76\u5458", emoji: "\u{1F50D}" },
@@ -110,6 +131,20 @@ function RoleDock(props) {
   const [open, setOpen] = (0, import_react.useState)(false);
   const sessionId = props?.sessionId;
   const [enabled, setEnabled] = (0, import_react.useState)(() => readEnabled(sessionId));
+  const [stats, setStats] = (0, import_react.useState)(null);
+  (0, import_react.useEffect)(() => {
+    let stop = false;
+    const tick = async () => {
+      const s = await fetchStats();
+      if (!stop && s) setStats(s);
+    };
+    void tick();
+    const timer = setInterval(tick, 5e3);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, []);
   (0, import_react.useEffect)(() => {
     setEnabled(readEnabled(sessionId));
   }, [sessionId]);
@@ -172,6 +207,19 @@ function RoleDock(props) {
       }
     ),
     switchButton,
+    stats && (stats.totals?.avoidedTokens ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "tribot-role-stats", title: t("statsTitle"), children: [
+      "\u26A1 ",
+      t("statsSaved"),
+      " \u2248",
+      fmtTok(stats.totals?.avoidedTokens ?? 0),
+      " tok\uFF08",
+      stats.reliefPct,
+      "%\uFF09\xB7 ",
+      t("statsCache"),
+      " ",
+      stats.cacheHitPct,
+      "%"
+    ] }),
     open && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tribot-role-menu", role: "menu", "aria-label": t("menuAria"), children: ROLES.map((role) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "button",
       {
@@ -283,6 +331,14 @@ var CSS = `
   background: var(--dsw-alias-bg-layer-1);
 }
 
+
+.tribot-role-stats {
+  flex: none;
+  color: var(--dsw-alias-label-secondary, var(--dsw-alias-label-primary));
+  font-size: 11px;
+  opacity: .65;
+  white-space: nowrap;
+}
 
 .tribot-role-menu {
   position: absolute;

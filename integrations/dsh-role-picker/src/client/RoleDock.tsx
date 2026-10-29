@@ -1,6 +1,29 @@
 import { useEffect, useState } from 'react'
 import { en, zh } from './locales'
 
+interface SaveTokenStats {
+  totals?: { avoidedTokens?: number }
+  reliefPct?: number
+  cacheHitPct?: number
+}
+
+async function fetchStats(): Promise<SaveTokenStats | null> {
+  try {
+    if (typeof fetch === 'undefined') return null
+    const res = await fetch('/save-token/api/dashboard', { credentials: 'same-origin' })
+    if (!res.ok) return null
+    const j = await res.json()
+    if (!j || typeof j.reliefPct !== 'number') return null
+    return j as SaveTokenStats
+  } catch {
+    return null
+  }
+}
+
+function fmtTok(n: number): string {
+  return n >= 10000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n))
+}
+
 interface Role {
   id: string
   canonical: string
@@ -65,6 +88,18 @@ export function RoleDock(props: any) {
   const [open, setOpen] = useState(false)
   const sessionId: string | undefined = props?.sessionId
   const [enabled, setEnabled] = useState(() => readEnabled(sessionId))
+  // 实时省 token 统计（来自 save-token 插件的官方 dashboard API）
+  const [stats, setStats] = useState<SaveTokenStats | null>(null)
+  useEffect(() => {
+    let stop = false
+    const tick = async () => {
+      const s = await fetchStats()
+      if (!stop && s) setStats(s)
+    }
+    void tick()
+    const timer = setInterval(tick, 5000)
+    return () => { stop = true; clearInterval(timer) }
+  }, [])
   // 会话切换时重读该会话自己的开关记忆
   useEffect(() => {
     setEnabled(readEnabled(sessionId))
@@ -139,6 +174,11 @@ export function RoleDock(props: any) {
         <span className="tribot-role-caret" aria-hidden>▾</span>
       </button>
       {switchButton}
+      {stats && (stats.totals?.avoidedTokens ?? 0) > 0 && (
+        <span className="tribot-role-stats" title={t('statsTitle')}>
+          ⚡ {t('statsSaved')} ≈{fmtTok(stats.totals?.avoidedTokens ?? 0)} tok（{stats.reliefPct}%）· {t('statsCache')} {stats.cacheHitPct}%
+        </span>
+      )}
 
       {open && (
         <div className="tribot-role-menu" role="menu" aria-label={t('menuAria')}>

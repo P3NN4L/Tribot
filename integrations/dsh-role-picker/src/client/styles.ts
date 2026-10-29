@@ -92,7 +92,7 @@ const CSS = `
   background: var(--dsw-alias-bg-layer-1);
 }
 
-
+\n.tribot-role-stats {\n  flex: none;\n  color: var(--dsw-alias-label-secondary, var(--dsw-alias-label-primary));\n  font-size: 11px;\n  opacity: .65;\n  white-space: nowrap;\n}\n
 .tribot-role-menu {
   position: absolute;
   left: 0;
