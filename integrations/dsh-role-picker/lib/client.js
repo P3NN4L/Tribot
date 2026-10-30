@@ -187,7 +187,18 @@ function RoleDock(props) {
     writeEnabled(sessionId, next);
     if (next) {
       const last = readRole(sessionId);
-      if (last) props?.inputActions?.setDraft?.(applyRole(draft, last));
+      if (last) {
+        props?.inputActions?.setDraft?.(applyRole(draft, last));
+        const submit = props?.inputActions?.submit;
+        if (typeof submit === "function") {
+          setTimeout(() => {
+            try {
+              submit();
+            } catch {
+            }
+          }, 50);
+        }
+      }
     }
   };
   const pick = (canonical) => {

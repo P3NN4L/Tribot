@@ -152,9 +152,15 @@ export function RoleDock(props: any) {
     setEnabled(next)
     writeEnabled(sessionId, next)
     if (next) {
-      // 打开 = 直接进入上次角色：草稿自动填 /tribot <角色>，发送即进入。
+      // 打开 = 直接进入上次角色：草稿填 /tribot <角色> 并自动发送，零操作进入。
       const last = readRole(sessionId)
-      if (last) props?.inputActions?.setDraft?.(applyRole(draft, last))
+      if (last) {
+        props?.inputActions?.setDraft?.(applyRole(draft, last))
+        const submit = props?.inputActions?.submit
+        if (typeof submit === 'function') {
+          setTimeout(() => { try { submit() } catch {} }, 50)
+        }
+      }
     }
     // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。
   }
