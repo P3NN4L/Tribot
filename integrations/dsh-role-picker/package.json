@@ -1,5 +1,5 @@
 {
-  "name": "dsh-tribot-role-picker",
+  "name": "dsh-tribot-team",
   "version": "0.1.0",
   "type": "module",
   "description": "TriBot Bot team for DeepSeek Harness: the /tribot skill (dispatcher / researcher / engineer / steward / reviewer) plus a visible role picker in the composer.",
