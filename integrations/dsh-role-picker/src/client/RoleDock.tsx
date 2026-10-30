@@ -151,8 +151,12 @@ export function RoleDock(props: any) {
     const next = !enabled
     setEnabled(next)
     writeEnabled(sessionId, next)
+    if (next) {
+      // 打开 = 直接进入上次角色：草稿自动填 /tribot <角色>，发送即进入。
+      const last = readRole(sessionId)
+      if (last) props?.inputActions?.setDraft?.(applyRole(draft, last))
+    }
     // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。
-    // 不再往草稿塞退出标记——角色仅在新消息里生效，关掉后下一条消息自然不再套用。
   }
 
   const pick = (canonical: string) => {

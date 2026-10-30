@@ -185,6 +185,10 @@ function RoleDock(props) {
     const next = !enabled;
     setEnabled(next);
     writeEnabled(sessionId, next);
+    if (next) {
+      const last = readRole(sessionId);
+      if (last) props?.inputActions?.setDraft?.(applyRole(draft, last));
+    }
   };
   const pick = (canonical) => {
     writeRole(sessionId, canonical);
