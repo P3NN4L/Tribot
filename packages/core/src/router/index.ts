@@ -28,6 +28,8 @@ export interface RouteContext {
   lastModel?: string;
   /** 用户只勾选了这些模型可用；null/undefined = 全部可用 */
   enabledModels?: string[] | null;
+  /** B. 角色档位上限：管家/研究员锁 balanced 以下，防巡检烧 flagship */
+  maxTierRank?: number;
 }
 
 export interface RouteDecision {
@@ -143,7 +145,12 @@ export function route(registry: ModelRegistry, ctx: RouteContext): RouteDecision
   // ===== 自动路由（默认）=====
   const cls = classifyTask(ctx.userText, !!ctx.taskCard);
   const neededRank = TIER_RANK[cls.tier];
-  const scored = all
+  // B. 角色档位上限：超出上限的模型排除（不影响 fallback 链——fallback 也受限）
+  const capped = ctx.maxTierRank !== undefined && ctx.maxTierRank > 0
+    ? all.filter((m) => TIER_RANK[m.tier] <= (ctx.maxTierRank as number))
+    : all;
+  const pool = capped.length > 0 ? capped : all; // 上限内一个都没有 → 放开，不阻塞
+  const scored = pool
     .map((m) => ({ m, s: scoreCandidate(m, neededRank, ctx) }))
     .sort((a, b) => b.s - a.s);
 

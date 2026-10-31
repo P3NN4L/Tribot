@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS } from '@tribot/shared';
 import { chatStream, isFailoverWorthy, type LLMMessage } from '../llm/client.js';
 import type { ModelRegistry } from '../llm/registry.js';
 import { route } from '../router/index.js';
+import { TIER_RANK } from '../router/classify.js';
 import { recordRouteFailure, recordRouteSuccess } from '../router/health.js';
 import { meterAggregate, recordUsage } from '../quota/index.js';
 import { deepseekPeriod } from '../quota/clock.js';
@@ -127,6 +128,8 @@ export async function runChat(ctx: EngineContext, opts: RunOptions): Promise<Cha
     billing: Object.fromEntries(registry.providerInfos(env).map((p) => [p.id, p.billing])),
     lastModel: lastModelRow?.model,
     enabledModels: settings.models?.enabled ?? null,
+    // B. 管家/研究员档位上限 balanced（rank≤1）；总管/工程师/审稿人不锁
+    maxTierRank: bot.name === '管家' || bot.name === '研究员' ? TIER_RANK['balanced'] : undefined,
   });
 
   // 3. 同题对比：并行单轮，不跑工具
@@ -172,7 +175,15 @@ export async function runChat(ctx: EngineContext, opts: RunOptions): Promise<Cha
   }
 
   // 4. 主循环（含降级链）
-  const skillNames = (db.prepare('SELECT name FROM skills WHERE enabled = 1 ORDER BY name LIMIT 30').all() as any[]).map((r) => r.name);
+  // A. 技能白名单：管家只留巡检类，研究员只留调研类，其余全部（总管不裁）
+  const ROLE_SKILL_FILTER: Record<string, RegExp> = {
+    管家: /巡检|检查|监控|清理|备份|巡检/,
+    研究员: /调研|搜索|检索|引用|来源|研究/,
+  };
+  const roleFilter = ROLE_SKILL_FILTER[bot.name];
+  const skillNames = (db.prepare('SELECT name FROM skills WHERE enabled = 1 ORDER BY name LIMIT 30').all() as any[])
+    .map((r) => r.name as string)
+    .filter((n) => !roleFilter || roleFilter.test(n));
   const approvals = new ApprovalService(
     db,
     { getSettings: ctx.getSettings, saveSettings: ctx.saveSettings },
