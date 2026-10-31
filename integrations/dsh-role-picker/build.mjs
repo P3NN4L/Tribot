@@ -30,7 +30,7 @@ await build({
   jsx: 'automatic',
   external: [...dshExternal, 'react', 'react-dom', 'react/jsx-runtime', 'scheduler'],
   banner: {
-    js: "window.__ModuleLoader__.load({ id: 'dsh-tribot-role-picker', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
+    js: "window.__ModuleLoader__.load({ id: 'dsh-tribot-team', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
   },
   footer: {
     js: 'return module.exports; } });',
