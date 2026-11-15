@@ -20,6 +20,8 @@ export const zh = {
   'role.steward.desc': '巡检、阈值判级、异常简报',
   'role.reviewer': '审稿人',
   'role.reviewer.desc': '对抗审查：结论 / 引用 / 边界',
+  'role.writer': '写手',
+  'role.writer.desc': '专业写作：文档 / 文案 / 报告',
   'role.team': '团队',
   'role.team.desc': '总管 → 专家 → 审稿人',
 }
@@ -43,6 +45,8 @@ export const en: typeof zh = {
   'role.steward.desc': 'Inspect, grade, report exceptions',
   'role.reviewer': 'Reviewer',
   'role.reviewer.desc': 'Adversarial review: claims, citations, limits',
+  'role.writer': 'Writer',
+  'role.writer.desc': 'Docs / copy / reports, clear and precise',
   'role.team': 'Team',
   'role.team.desc': 'Dispatcher → specialist → reviewer',
 }

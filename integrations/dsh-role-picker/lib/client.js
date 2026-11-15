@@ -48,6 +48,8 @@ var zh = {
   "role.steward.desc": "\u5DE1\u68C0\u3001\u9608\u503C\u5224\u7EA7\u3001\u5F02\u5E38\u7B80\u62A5",
   "role.reviewer": "\u5BA1\u7A3F\u4EBA",
   "role.reviewer.desc": "\u5BF9\u6297\u5BA1\u67E5\uFF1A\u7ED3\u8BBA / \u5F15\u7528 / \u8FB9\u754C",
+  "role.writer": "\u5199\u624B",
+  "role.writer.desc": "\u4E13\u4E1A\u5199\u4F5C\uFF1A\u6587\u6863 / \u6587\u6848 / \u62A5\u544A",
   "role.team": "\u56E2\u961F",
   "role.team.desc": "\u603B\u7BA1 \u2192 \u4E13\u5BB6 \u2192 \u5BA1\u7A3F\u4EBA"
 };
@@ -69,6 +71,8 @@ var en = {
   "role.steward.desc": "Inspect, grade, report exceptions",
   "role.reviewer": "Reviewer",
   "role.reviewer.desc": "Adversarial review: claims, citations, limits",
+  "role.writer": "Writer",
+  "role.writer.desc": "Docs / copy / reports, clear and precise",
   "role.team": "Team",
   "role.team.desc": "Dispatcher \u2192 specialist \u2192 reviewer"
 };
@@ -96,6 +100,7 @@ var ROLES = [
   { id: "engineer", canonical: "\u5DE5\u7A0B\u5E08", emoji: "\u{1F6E0}" },
   { id: "steward", canonical: "\u7BA1\u5BB6", emoji: "\u23F0" },
   { id: "reviewer", canonical: "\u5BA1\u7A3F\u4EBA", emoji: "\u{1F9EA}" },
+  { id: "writer", canonical: "\u5199\u624B", emoji: "\u270D\uFE0F" },
   { id: "team", canonical: "\u56E2\u961F", emoji: "\u{1F465}" }
 ];
 var GLOBAL_KEY = "tribot-role-picker:enabled";

@@ -36,6 +36,7 @@ const ROLES: readonly Role[] = [
   { id: 'engineer', canonical: '工程师', emoji: '🛠' },
   { id: 'steward', canonical: '管家', emoji: '⏰' },
   { id: 'reviewer', canonical: '审稿人', emoji: '🧪' },
+  { id: 'writer', canonical: '写手', emoji: '✍️' },
   { id: 'team', canonical: '团队', emoji: '👥' },
 ]
 
