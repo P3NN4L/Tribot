@@ -42,7 +42,7 @@ export class ApprovalService {
     private timeoutMs = 10 * 60_000,
   ) {}
 
-  /** 返回 approved / denied / timeout */
+  /** 返回 approved / denied / timeout / aborted */
   async request(input: {
     sessionId: string;
     botName: string;
@@ -50,6 +50,8 @@ export class ApprovalService {
     args: Record<string, unknown>;
     risk: RiskLevel;
     reason: string;
+    /** R5：用户点「停止」/ 连接断开时，审批等待必须能被打断 */
+    signal?: AbortSignal;
   }): Promise<Decision> {
     const settings = this.deps.getSettings();
     const blocked = sandboxBlocks(settings.sandbox, input.tool);
@@ -89,23 +91,40 @@ export class ApprovalService {
     const approval: Approval = { ...input, id, status: 'pending', createdAt: nowIso() };
     this.emit({ type: 'approval_request', approval });
 
+    // R5：已取消就不再等
+    if (input.signal?.aborted) {
+      try { this.mark(id, 'denied'); } catch { /* 库已关闭 */ }
+      return 'denied';
+    }
+
     return new Promise<Decision>((resolve) => {
-      const settle = (d: Decision, scope?: ApprovalScope) => {
+      const cleanup = () => {
         approvalHub.delete(id);
         clearTimeout(timer);
         this.pending.delete(id);
+        input.signal?.removeEventListener('abort', onAbort);
+      };
+      const settle = (d: Decision, scope?: ApprovalScope) => {
+        cleanup();
         try { this.mark(id, d); } catch { /* 库已关闭 */ }
         if (d === 'approved' && scope && scope !== 'once') {
           this.grant(input.tool, scope, input.sessionId);
         }
         resolve(d);
       };
+      const onAbort = () => {
+        cleanup();
+        try { this.mark(id, 'denied'); } catch { /* 库已关闭 */ }
+        resolve('denied');
+      };
       const timer = setTimeout(() => {
         approvalHub.delete(id);
         this.pending.delete(id);
+        input.signal?.removeEventListener('abort', onAbort);
         try { this.mark(id, 'timeout'); } catch { /* 库已关闭 */ }
         resolve('timeout');
       }, this.timeoutMs);
+      input.signal?.addEventListener('abort', onAbort, { once: true });
       approvalHub.set(id, settle);
       this.pending.set(id, { resolve: settle, timer });
     });

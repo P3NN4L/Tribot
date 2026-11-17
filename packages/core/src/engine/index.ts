@@ -198,6 +198,7 @@ export async function runChat(ctx: EngineContext, opts: RunOptions): Promise<Cha
     emit,
     planMode: !!opts.plan,
     approvals,
+    signal: opts.signal,
     dispatch: depth < 2 ? async (botName, instruction) => {
       const target = listBots(db).find((b) => b.name === botName || b.name.includes(botName));
       if (!target) return `没有叫 "${botName}" 的 Bot。可用的有：${listBots(db).map((b) => b.name).join('、')}`;
@@ -297,6 +298,11 @@ export async function runChat(ctx: EngineContext, opts: RunOptions): Promise<Cha
           })),
         });
         for (const tc of result.toolCalls) {
+          // R5：已取消就别再启动新工具（每个工具入口都检查一次）
+          if (opts.signal?.aborted) {
+            emit({ type: 'done' });
+            return insertMessage(db, { sessionId: opts.sessionId, role: 'assistant', botId: bot.id, botName: bot.name, content: '（已停止）' });
+          }
           const tool = findTool(tc.name);
           emit({ type: 'tool_call', callId: tc.id, tool: tc.name, args: tc.args });
           let outcome: { ok: boolean; output: string };
@@ -372,14 +378,36 @@ export async function runChat(ctx: EngineContext, opts: RunOptions): Promise<Cha
         }
       }
 
-      const message = insertMessage(db, {
-        sessionId: opts.sessionId, role: 'assistant', botId: bot.id, botName: bot.name,
-        content: finalContent, provider: model.provider, model: model.id,
-        routeReason: attempt === 0 ? decision.reason : `${decision.reason}（由 ${decision.chain[attempt - 1].label} 降级）`,
-        degraded: attempt > 0,
-        thinking: effort,
-        usage: { inputTokens: totalIn, outputTokens: totalOut, cachedTokens: totalCached, latencyMs: totalLatency },
-      });
+      // R6：DB 落库单独兜底——写库失败不该被当成"模型失败"去触发下一家降级重跑
+      let message: ChatMessage;
+      try {
+        message = insertMessage(db, {
+          sessionId: opts.sessionId, role: 'assistant', botId: bot.id, botName: bot.name,
+          content: finalContent, provider: model.provider, model: model.id,
+          routeReason: attempt === 0 ? decision.reason : `${decision.reason}（由 ${decision.chain[attempt - 1].label} 降级）`,
+          degraded: attempt > 0,
+          thinking: effort,
+          usage: { inputTokens: totalIn, outputTokens: totalOut, cachedTokens: totalCached, latencyMs: totalLatency },
+        });
+      } catch (e: any) {
+        emit({
+          type: 'error',
+          message: `回复已生成但写入数据库失败（${e?.message ?? e}）。内容如下，可复制保存：\n${finalContent.slice(0, 2000)}`,
+        });
+        emit({ type: 'done' });
+        return {
+          id: `local-${Date.now().toString(36)}`,
+          sessionId: opts.sessionId,
+          role: 'assistant',
+          botId: bot.id,
+          botName: bot.name,
+          content: finalContent,
+          provider: model.provider,
+          model: model.id,
+          degraded: true,
+          createdAt: new Date().toISOString(),
+        } as ChatMessage;
+      }
       // 角色输出契约校验：只检查结构是否齐全，缺了就提示用户可以让它补
       if (depth === 0) {
         const role = roleForBotName(bot.name);

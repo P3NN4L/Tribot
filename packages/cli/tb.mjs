@@ -7,14 +7,10 @@ import readline from 'node:readline';
 const args = process.argv.slice(2);
 const cmd = args[0] || 'help';
 
-// ---------- 端口发现：--port > 环境变量 > data/daemon.json > 47615 ----------
-function findPort() {
-  const pIdx = args.indexOf('--port');
-  if (pIdx >= 0 && args[pIdx + 1]) return Number(args[pIdx + 1]);
-  if (process.env.TRIBOT_PORT) return Number(process.env.TRIBOT_PORT);
+// ---------- 端口与令牌发现：--port > 环境变量 > data/daemon.json > 47615 ----------
+function daemonCandidates() {
   const candidates = [];
   if (process.env.TRIBOT_DATA_DIR) candidates.push(path.join(process.env.TRIBOT_DATA_DIR, 'daemon.json'));
-  // 从 cwd 向上找项目根
   let dir = process.cwd();
   for (let i = 0; i < 8; i++) {
     candidates.push(path.join(dir, 'data', 'daemon.json'));
@@ -23,7 +19,14 @@ function findPort() {
     if (parent === dir) break;
     dir = parent;
   }
-  for (const f of candidates) {
+  return candidates;
+}
+
+function findPort() {
+  const pIdx = args.indexOf('--port');
+  if (pIdx >= 0 && args[pIdx + 1]) return Number(args[pIdx + 1]);
+  if (process.env.TRIBOT_PORT) return Number(process.env.TRIBOT_PORT);
+  for (const f of daemonCandidates()) {
     try {
       const j = JSON.parse(fs.readFileSync(f, 'utf8'));
       if (j?.port) return j.port;
@@ -32,13 +35,27 @@ function findPort() {
   return 47615;
 }
 
+/** B1：/api/* 需要本地令牌，从 daemon.json 取（也可用 TRIBOT_TOKEN 覆盖） */
+function findToken() {
+  if (process.env.TRIBOT_TOKEN) return process.env.TRIBOT_TOKEN.trim();
+  for (const f of daemonCandidates()) {
+    try {
+      const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+      if (typeof j?.token === 'string' && j.token) return j.token;
+    } catch { /* next */ }
+  }
+  return '';
+}
+
 const PORT = findPort();
 const BASE = `http://127.0.0.1:${PORT}`;
+const TOKEN = findToken();
+const AUTH = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
 
 async function j(pathname, init) {
   const res = await fetch(`${BASE}${pathname}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: { ...AUTH, 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json();
@@ -177,7 +194,7 @@ async function streamChat(sessionId, content, opts = {}) {
   const botId = opts.bot ? bots.find((b) => b.name.includes(opts.bot))?.id : bots[0]?.id;
   const res = await fetch(`${BASE}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...AUTH, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sessionId, content, botId,
       mode: opts.mode,

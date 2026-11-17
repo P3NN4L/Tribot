@@ -85,3 +85,29 @@
 | 安全文档更新（威胁模型、令牌机制） | 写手 | 2 小时 |
 
 **判定**：修完 B1 + R1/R7/R8 即可进入内测；R2–R6 可作为首个补丁。
+
+---
+
+## 修复状态（2026-11-18）
+
+已全部修复并验证：`pnpm typecheck` 无错 · 172 个测试全绿（core 165 + server 7）。
+
+| 项 | 状态 | 改动位置 | 做法 |
+|---|---|---|---|
+| **B1** | ✅ 已修 | `server/src/index.ts` | CORS 改白名单（只放 127.0.0.1/localhost/file://）；新增本地令牌（`TRIBOT_TOKEN` 或随机 24 字节），写入 `daemon.json`；`onRequest` 钩子对 `/api/*` 校验 Bearer 或 `?token=`（`/api/health` 例外）；SSE 手写头同样只回写本机来源；`/` 注入 `window.__TRIBOT_TOKEN__` |
+| B1 三端对接 | ✅ | `renderer/src/api.ts`、`electron/main.ts`、`cli/tb.mjs` | UI 从 URL/注入/localStorage 取令牌并统一加 `Authorization`；Electron 主进程读 `daemon.json` 并拼到加载 URL；CLI 从 `daemon.json`/环境变量取令牌 |
+| B1 回归测试 | ✅ | `server/tests/auth.test.ts` | 5 条：无令牌 401 / 带令牌 200 / health 免令牌 / 外站 Origin 无 Allow-Origin / 本机 Origin 有 |
+| **R1** | ✅ 已修 | `server/src/index.ts` | 同会话已有 run 时返回 **409**，不再覆盖 Map |
+| **R2** | ✅ 已修 | `core/src/db.ts` | `PRAGMA busy_timeout = 5000` + `synchronous = NORMAL`（WAL 下安全） |
+| **R3** | ✅ 已修 | `server/src/index.ts` | SSE 写队列 + `drain` 背压，队列上限 1000（超限丢弃新内容，防内存无界） |
+| **R5** | ✅ 已修 | `core/src/tools/approval.ts`、`tools/index.ts`、`engine/index.ts` | 审批 `request()` 接受 `signal`，等待中被 abort 立即返回 denied；`ToolContext.signal` 注入；工具循环每个工具入口检查 `aborted` |
+| **R6** | ✅ 已修 | `engine/index.ts` | 落库单独 try/catch：DB 写失败不再被当成模型失败触发降级重跑，改为报错 + 返回内存态消息 |
+| **R7** | ✅ 已修 | `server/src/index.ts` | `doneSent` 标记 + finally 保证**恰好一个**终止事件；给队列 30ms 刷尾再关连接 |
+| **R8** | ✅ 已修 | `electron/server-entry.ts`、`electron/main.ts` | 入口 `.catch` 记录并非零退出；主进程监听 exit，指数退避重启（最多 5 次）并向窗口推送 `tribot:server-state` |
+| **S1** | ✅ 已修 | `core/src/tools/index.ts` | `safeResolve` 增加 `realContained()`：词法校验后再 `realpath` 逐级校验，防符号链接逃逸 |
+| **S2** | ✅ 已修 | `core/src/checkpoints.ts` | 恢复前对 root/target 做 `realpath` 二次校验，指向工作区外即拒绝 |
+| **R4** | ⏳ 未修（有意） | — | SSE 断线续传（event id / Last-Event-ID / 回放）需要持久化 run 事件序号，属功能增强而非缺陷修复，列入首个补丁 |
+
+### 上线判定更新
+
+阻断项 B1 已消除，R1/R2/R3/R5/R6/R7/R8 + S1/S2 已修并全量回归通过。**当前可进入内测**；正式对外前建议补 R4（SSE 续传）与干净机器冒烟（首启/无 Key/断网/杀子进程）。

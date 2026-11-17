@@ -70,6 +70,9 @@ export function openDb(dataDir: string): Db {
   fs.mkdirSync(dataDir, { recursive: true });
   const db = new DatabaseSync(path.join(dataDir, 'tribot.db'));
   db.exec('PRAGMA journal_mode = WAL;');
+  // R2：外部进程争写时不要立刻 SQLITE_BUSY；WAL 下 NORMAL 已足够安全
+  db.exec('PRAGMA busy_timeout = 5000;');
+  db.exec('PRAGMA synchronous = NORMAL;');
   db.exec(SCHEMA);
   // 轻量迁移：老库补列（失败说明列已存在）
   for (const sql of [

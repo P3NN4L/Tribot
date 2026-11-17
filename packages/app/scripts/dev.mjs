@@ -48,7 +48,9 @@ for (const [entry, outfile] of [
     format: 'cjs',
     target: 'node22',
     outfile: path.join(buildDir, outfile),
-    external: ['electron'],
+    // playwright-core 与其可选依赖 chromium-bidi 保持外部引用：chromium-bidi 未随包安装，
+    // 仅 WebDriver BiDi 连接才会加载，打进 bundle 会让 esbuild 直接解析失败
+    external: ['electron', 'playwright-core', 'chromium-bidi', 'chromium-bidi/*'],
     sourcemap: false,
     logLevel: 'error',
   });

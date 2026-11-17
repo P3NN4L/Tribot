@@ -70,14 +70,19 @@ async function fetchHealth(port: number, timeoutMs = 700): Promise<boolean> {
   }
 }
 
-async function readDaemonPort(): Promise<number | null> {
+/** 读 daemon.json：端口 + 本地令牌（B1：/api/* 需要令牌） */
+function readDaemon(): { port: number | null; token: string } {
   try {
     const raw = fs.readFileSync(path.join(dataDir(), 'daemon.json'), 'utf8');
     const j = JSON.parse(raw);
-    return typeof j?.port === 'number' ? j.port : null;
+    return { port: typeof j?.port === 'number' ? j.port : null, token: typeof j?.token === 'string' ? j.token : '' };
   } catch {
-    return null;
+    return { port: null, token: '' };
   }
+}
+
+async function readDaemonPort(): Promise<number | null> {
+  return readDaemon().port;
 }
 
 let serverProc: ChildProcess | null = null;
@@ -106,6 +111,9 @@ function ensureMasterKey(): string | null {
   }
 }
 
+let serverRestarts = 0;
+const MAX_SERVER_RESTARTS = 5;
+
 async function spawnServer(): Promise<number> {
   const root = PACKAGED ? dataDir() : findProjectRoot(__dirname);
   const serverJs = path.join(__dirname, 'server.cjs');
@@ -127,7 +135,27 @@ async function spawnServer(): Promise<number> {
   serverProc.stderr?.on('data', (d) => process.stderr.write(`[server] ${d}`));
   serverProc.on('exit', (code) => {
     serverProc = null;
-    if (code && code !== 0) console.error(`[tribot] server 退出 code=${code}`);
+    if ((app as any).isQuitting) return;
+    // R8：非正常退出就退避重启，并把状态告诉窗口，避免"窗口在、后端没了"
+    if (code && code !== 0) {
+      console.error(`[tribot] server 退出 code=${code}`);
+      if (serverRestarts < MAX_SERVER_RESTARTS) {
+        serverRestarts += 1;
+        const delay = Math.min(1000 * 2 ** (serverRestarts - 1), 15_000);
+        console.log(`[tribot] ${delay}ms 后第 ${serverRestarts} 次重启 server`);
+        win?.webContents.send('tribot:server-state', { state: 'restarting', attempt: serverRestarts });
+        setTimeout(() => {
+          void spawnServer()
+            .then((p) => { win?.webContents.send('tribot:server-state', { state: 'ready', port: p }); })
+            .catch((e) => {
+              console.error('[tribot] server 重启失败：', e?.message ?? e);
+              win?.webContents.send('tribot:server-state', { state: 'failed', attempt: serverRestarts });
+            });
+        }, delay);
+      } else {
+        win?.webContents.send('tribot:server-state', { state: 'failed', attempt: serverRestarts });
+      }
+    }
   });
 
   // 等健康检查通过（最多 25 秒）
@@ -247,9 +275,11 @@ function createWindow(port: number): void {
       nodeIntegration: false,
     },
   });
+  const token = readDaemon().token;
+  const tokenQs = token ? `&token=${encodeURIComponent(token)}` : '';
   const url = process.env.TRIBOT_DEV_URL
-    ? `${process.env.TRIBOT_DEV_URL}?port=${port}`
-    : `file://${path.join(__dirname, 'renderer/index.html')}?port=${port}`;
+    ? `${process.env.TRIBOT_DEV_URL}?port=${port}${tokenQs}`
+    : `file://${path.join(__dirname, 'renderer/index.html')}?port=${port}${tokenQs}`;
   void win.loadURL(url);
   win.webContents.setWindowOpenHandler(({ url: u }) => {
     void shell.openExternal(u);

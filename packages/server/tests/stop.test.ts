@@ -60,10 +60,11 @@ afterAll(async () => {
 describe('POST /api/sessions/:id/stop', () => {
   it('空闲会话：返回 ok:false', { timeout: 20_000 }, async () => {
     const t = await buildTriBot();
+    const H = { authorization: 'Bearer ' + t.token };
     try {
-      const created = await t.app.inject({ method: 'POST', url: '/api/sessions', payload: { title: 'stop-test', type: 'chat' } });
+      const created = await t.app.inject({ headers: H, method: 'POST', url: '/api/sessions', payload: { title: 'stop-test', type: 'chat' } });
       const sid = created.json().session.id;
-      const res = await t.app.inject({ method: 'POST', url: `/api/sessions/${sid}/stop` });
+      const res = await t.app.inject({ headers: H, method: 'POST', url: `/api/sessions/${sid}/stop` });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.ok).toBe(false);
@@ -76,15 +77,16 @@ describe('POST /api/sessions/:id/stop', () => {
 
   it('生成中：stop 触发 abort，流快速收尾且上游连接释放（不调真实模型）', { timeout: 20_000 }, async () => {
     const t = await buildTriBot();
+    const H = { authorization: 'Bearer ' + t.token };
     try {
       // 把 glm 凭证指到本地假 OpenAI（apiKey 随便，假服务器不校验）
-      const put = await t.app.inject({
+      const put = await t.app.inject({ headers: H,
         method: 'PUT', url: '/api/credentials/glm',
         payload: { apiKey: 'test-fake-key', baseURL: `http://127.0.0.1:${FAKE_PORT}` },
       });
       expect(put.statusCode).toBe(200);
 
-      const created = await t.app.inject({ method: 'POST', url: '/api/sessions', payload: { title: 'stop-stream', type: 'chat' } });
+      const created = await t.app.inject({ headers: H, method: 'POST', url: '/api/sessions', payload: { title: 'stop-stream', type: 'chat' } });
       const sid = created.json().session.id;
 
       // 真实 HTTP 监听（SSE + hijack 走不了 inject）
@@ -92,7 +94,8 @@ describe('POST /api/sessions/:id/stop', () => {
       const base = `http://127.0.0.1:${(t.app.server.address() as any).port}`;
 
       const res = await fetch(`${base}/api/chat`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8', Authorization: `Bearer ${t.token}` },
         body: JSON.stringify({ sessionId: sid, content: '随便说点什么', mode: 'manual', model: 'glm-5.3', thinking: 'fast' }),
       });
       expect(res.ok).toBe(true);
@@ -118,7 +121,7 @@ describe('POST /api/sessions/:id/stop', () => {
 
       // 阶段二：stop → ok:true
       const stopAt = Date.now();
-      const stop = await t.app.inject({ method: 'POST', url: `/api/sessions/${sid}/stop` });
+      const stop = await t.app.inject({ headers: H, method: 'POST', url: `/api/sessions/${sid}/stop` });
       expect(stop.statusCode).toBe(200);
       expect(stop.json().ok).toBe(true);
 

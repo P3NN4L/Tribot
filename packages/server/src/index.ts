@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import type { AppSettings, ChatRequest, StreamEvent } from '@tribot/shared';
@@ -92,6 +93,8 @@ export interface TriBotApp {
   app: FastifyInstance;
   ctx: EngineContext;
   scheduler: RoutineScheduler;
+  /** 本地访问令牌：所有 /api/* 必须携带（/api/health 例外，供端口发现） */
+  token: string;
 }
 
 /** 组装全部路由（不监听端口；Electron 内嵌 / 独立进程都可用） */
@@ -100,6 +103,25 @@ export async function buildTriBot(): Promise<TriBotApp> {
   fs.mkdirSync(env.dataDir, { recursive: true });
   const db = openDb(env.dataDir);
   seedBots(db);
+
+  // ===== B1 本地访问令牌 + 来源白名单 =====
+  // server 只监听 127.0.0.1，但浏览器里任意网页也能向本机发起请求；
+  // 因此：① CORS 只放行本机来源；② /api/* 必须带令牌（health 例外，供端口发现）。
+  const token = (process.env.TRIBOT_TOKEN ?? '').trim() || crypto.randomBytes(24).toString('hex');
+
+  /** 只认本机来源：127.0.0.1 / localhost / [::1]，以及 file:// 的 null */
+  const isLocalOrigin = (origin?: string | null): boolean => {
+    if (!origin) return true; // 同源或非浏览器客户端（CLI/curl）
+    if (origin === 'null') return true; // file://（Electron/原生壳），仍需令牌
+    try {
+      const u = new URL(origin);
+      const host = u.hostname;
+      return (host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]')
+        && (u.protocol === 'http:' || u.protocol === 'https:');
+    } catch {
+      return false;
+    }
+  };
 
   // 老库里的设置可能缺新字段：读的时候统一补齐默认值，避免「没配过 sandbox」被当成全权
   const getSettings = (): AppSettings => {
@@ -180,7 +202,22 @@ export async function buildTriBot(): Promise<TriBotApp> {
   const app = Fastify({ logger: false, bodyLimit: 8 * 1024 * 1024 });
   // 每个会话正在跑的聊天；用于「停止」和防止同一会话并发
   const activeChats = new Map<string, AbortController>();
-  await app.register(cors, { origin: true });
+  await app.register(cors, {
+    origin: (origin, cb) => cb(null, isLocalOrigin(origin)),
+    credentials: false,
+  });
+
+  // 令牌校验：/api/* 除 health 外一律要求 Bearer 或 ?token=
+  app.addHook('onRequest', async (req, reply) => {
+    const url = req.raw.url ?? '';
+    if (!url.startsWith('/api/')) return; // 静态资源（UI 外壳）无需令牌
+    if (url === '/api/health' || url.startsWith('/api/health?')) return; // 端口发现/健康检查
+    const header = String(req.headers.authorization ?? '');
+    const bearer = header.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : '';
+    const q = (req.query as { token?: string } | undefined)?.token;
+    if (bearer === token || q === token) return;
+    return reply.code(401).send({ error: '未授权：缺少或错误的本地令牌' });
+  });
 
   const defaultBotId = () => listBots(db)[0]?.id;
 
@@ -275,7 +312,11 @@ export async function buildTriBot(): Promise<TriBotApp> {
   app.get('/', async (_req, reply) => {
     const file = path.join(rendererRoot, 'index.html');
     if (!fs.existsSync(file)) return reply.code(404).send({ error: '还没有构建前端：先 pnpm package' });
-    return reply.header('Cache-Control', 'no-store').type('text/html; charset=utf-8').send(fs.readFileSync(file));
+    // 注入本地令牌，供浏览器/原生壳的 UI 调用 /api/*
+    let html = fs.readFileSync(file, 'utf8');
+    const inject = `<script>window.__TRIBOT_TOKEN__=${JSON.stringify(token)};</script>`;
+    html = html.includes('</head>') ? html.replace('</head>', `${inject}</head>`) : inject + html;
+    return reply.header('Cache-Control', 'no-store').type('text/html; charset=utf-8').send(html);
   });
   app.get('/assets/*', async (req, reply) => {
     const rel = String((req.params as Record<string, string>)['*'] ?? '');
@@ -681,6 +722,11 @@ export async function buildTriBot(): Promise<TriBotApp> {
       db.prepare('UPDATE sessions SET title = ? WHERE id = ?').run(body.content.slice(0, 18), body.sessionId);
     }
 
+    // R1：同一会话不允许并发 run（旧 run 继续跑且丢 stop 句柄是隐患）
+    if (activeChats.has(body.sessionId)) {
+      return reply.code(409).send({ error: '该会话已有正在生成的回复，请先停止或等它结束' });
+    }
+
     reply.hijack();
     const raw = reply.raw;
     raw.writeHead(200, {
@@ -688,14 +734,42 @@ export async function buildTriBot(): Promise<TriBotApp> {
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
-      // reply.hijack 会绕过 CORS 插件，这里手动回写，否则浏览器直连会 Failed to fetch
-      ...(req.headers.origin ? { 'Access-Control-Allow-Origin': req.headers.origin, Vary: 'Origin' } : {}),
+      // reply.hijack 会绕过 CORS 插件，这里手动回写；只回写本机来源（见 isLocalOrigin）
+      ...(req.headers.origin && isLocalOrigin(req.headers.origin)
+        ? { 'Access-Control-Allow-Origin': req.headers.origin, Vary: 'Origin' }
+        : {}),
     });
+    // R3：SSE 写队列 + 背压。慢客户端不再让 token 无界堆积在内存里。
+    let doneSent = false;
+    let writing = false;
+    const outQueue: string[] = [];
+    const MAX_OUT_QUEUE = 1000;
+    const pump = () => {
+      if (writing) return;
+      writing = true;
+      try {
+        while (outQueue.length > 0) {
+          const chunk = outQueue.shift()!;
+          if (!raw.write(chunk)) return; // 缓冲满：等 drain 再继续
+        }
+      } catch {
+        /* 已断开 */
+      } finally {
+        writing = false;
+      }
+    };
+    raw.on('drain', () => { writing = false; pump(); });
+    const enqueue = (chunk: string) => {
+      if (outQueue.length >= MAX_OUT_QUEUE) return; // 超限丢弃新内容，避免内存无界增长
+      outQueue.push(chunk);
+      pump();
+    };
     const send = (e: StreamEvent) => {
-      try { raw.write(`data: ${JSON.stringify(e)}\n\n`); } catch { /* 已断开 */ }
+      if (e.type === 'done') doneSent = true;
+      enqueue(`data: ${JSON.stringify(e)}\n\n`);
     };
     const heartbeat = setInterval(() => {
-      try { raw.write(': ping\n\n'); } catch { /* ignore */ }
+      enqueue(': ping\n\n');
     }, 15_000);
     const controller = new AbortController();
     activeChats.set(body.sessionId, controller);
@@ -716,12 +790,14 @@ export async function buildTriBot(): Promise<TriBotApp> {
         signal: controller.signal,
       });
     } catch (e: any) {
-      if (controller.signal.aborted) send({ type: 'done' });
-      else send({ type: 'error', message: String(e?.message ?? e) });
+      if (!controller.signal.aborted) send({ type: 'error', message: String(e?.message ?? e) });
     } finally {
+      // R7：无论走哪条路径，保证恰好一个终止事件
+      if (!doneSent) send({ type: 'done' });
       if (activeChats.get(body.sessionId) === controller) activeChats.delete(body.sessionId);
       clearInterval(heartbeat);
-      try { raw.end(); } catch { /* ignore */ }
+      // 给队列一点时间把尾部事件刷出去再关连接
+      setTimeout(() => { try { raw.end(); } catch { /* ignore */ } }, 30);
     }
   });
 
@@ -1186,13 +1262,13 @@ export async function buildTriBot(): Promise<TriBotApp> {
     return { ok: true, settings: next };
   });
 
-  return { app, ctx, scheduler };
+  return { app, ctx, scheduler, token };
 }
 
 /** 独立进程启动：监听 127.0.0.1，写 daemon.json 供 CLI/App 发现 */
 export async function startServer(preferredPort?: number): Promise<{ app: FastifyInstance; port: number }> {
   const env = loadEnv();
-  const { app, scheduler } = await buildTriBot();
+  const { app, scheduler, token } = await buildTriBot();
 
   let port = preferredPort ?? env.port;
   for (let i = 0; i < 11; i++) {
@@ -1207,7 +1283,8 @@ export async function startServer(preferredPort?: number): Promise<{ app: Fastif
   (globalThis as any).__tribotPort = port;
 
   const daemonFile = path.join(env.dataDir, 'daemon.json');
-  fs.writeFileSync(daemonFile, JSON.stringify({ port, pid: process.pid, startedAt: nowIso() }, null, 2));
+  // token 写入 daemon.json：CLI 与 Electron 主进程从这里取，用于调 /api/*
+  fs.writeFileSync(daemonFile, JSON.stringify({ port, pid: process.pid, token, startedAt: nowIso() }, null, 2));
 
   const shutdown = () => {
     try { fs.rmSync(daemonFile, { force: true }); } catch { /* ignore */ }

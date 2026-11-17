@@ -1,4 +1,4 @@
-import { parseExpression } from 'cron-parser';
+import { CronExpressionParser } from 'cron-parser';
 import type { Routine } from '@tribot/shared';
 import { rowToRoutine, createSession } from '../db.js';
 import type { Db } from '../db.js';
@@ -14,7 +14,7 @@ export function shouldDeferRoutine(routine: Pick<Routine, 'offpeakOnly'>, period
 
 export function validateCron(expr: string): boolean {
   try {
-    parseExpression(expr, { tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    CronExpressionParser.parse(expr, { tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
     return true;
   } catch {
     return false;
@@ -23,7 +23,7 @@ export function validateCron(expr: string): boolean {
 
 function prevFireTime(expr: string, now: Date): Date | null {
   try {
-    const iter = parseExpression(expr, {
+    const iter = CronExpressionParser.parse(expr, {
       currentDate: now,
       tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });

@@ -55,6 +55,18 @@ export function restoreCheckpoint(db: Db, id: string): { ok: boolean; path?: str
   if (!target.startsWith(root + path.sep) && target !== root) {
     return { ok: false, message: '检查点路径不在原工作区内，已拒绝' };
   }
+  // S2：符号链接可能把 target 指到工作区外，恢复前用真实路径再校验一次
+  try {
+    const realRoot = fs.existsSync(root) ? fs.realpathSync(root) : root;
+    const realTarget = fs.existsSync(target)
+      ? fs.realpathSync(target)
+      : path.join(fs.existsSync(path.dirname(target)) ? fs.realpathSync(path.dirname(target)) : path.dirname(target), path.basename(target));
+    if (!realTarget.startsWith(realRoot + path.sep) && realTarget !== realRoot) {
+      return { ok: false, message: '检查点指向的真实路径不在工作区内（疑似符号链接），已拒绝' };
+    }
+  } catch {
+    return { ok: false, message: '无法解析检查点真实路径，已拒绝' };
+  }
   try {
     if (row.existed) {
       if (typeof row.content !== 'string') return { ok: false, message: '这个检查点没有保存文件内容' };

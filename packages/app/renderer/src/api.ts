@@ -21,6 +21,31 @@ export function setPort(p: string): void {
   port = p;
   localStorage.setItem('tribot_port', p);
 }
+
+// ===== 本地令牌（B1）：server 只放行本机来源，且 /api/* 必须带令牌 =====
+// 来源优先级：Electron 主进程经 URL 传入 > server 注入的 window.__TRIBOT_TOKEN__ > localStorage
+function initialToken(): string {
+  const q = new URLSearchParams(location.search).get('token');
+  if (q) {
+    try { sessionStorage.setItem('tribot_token', q); } catch { /* ignore */ }
+    return q;
+  }
+  const injected = (globalThis as { __TRIBOT_TOKEN__?: string }).__TRIBOT_TOKEN__;
+  if (injected) {
+    try { sessionStorage.setItem('tribot_token', injected); } catch { /* ignore */ }
+    return injected;
+  }
+  try { return sessionStorage.getItem('tribot_token') ?? ''; } catch { return ''; }
+}
+let token = initialToken();
+export const getToken = () => token;
+export function setToken(t: string): void {
+  token = t;
+  try { sessionStorage.setItem('tribot_token', t); } catch { /* ignore */ }
+}
+/** 统一注入鉴权头；SSE（fetch 流）同样适用 */
+export const authHeaders = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
+
 export const baseUrl = (): string => `http://127.0.0.1:${port}`;
 /** 皮肤图片地址（带版本号避免缓存） */
 export const skinUrl = (v?: string): string => `${baseUrl()}/api/skin/image${v ? `?v=${encodeURIComponent(v)}` : ''}`;
@@ -84,7 +109,7 @@ export async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const hasBody = init?.body != null;
   const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
-    headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(init?.headers ?? {}) },
+    headers: { ...authHeaders(), ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...(init?.headers ?? {}) },
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -132,7 +157,7 @@ export const api = {
   }>('/api/stats/usage'),
   stopSession: (id: string) => json<{ ok: boolean; note?: string }>(`/api/sessions/${id}/stop`, { method: 'POST' }),
   exportSession: async (id: string): Promise<string> => {
-    const res = await fetch(`${baseUrl()}/api/sessions/${id}/export`);
+    const res = await fetch(`${baseUrl()}/api/sessions/${id}/export`, { headers: authHeaders() });
     if (!res.ok) throw new Error(`导出失败：HTTP ${res.status}`);
     return res.text();
   },
@@ -223,7 +248,7 @@ export async function streamChat(
 ): Promise<void> {
   const res = await fetch(`${baseUrl()}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     signal,
   });

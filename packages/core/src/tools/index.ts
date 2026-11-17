@@ -33,6 +33,8 @@ export interface ToolContext {
   /** 总管分派子任务（engine 注入） */
   dispatch?: (botName: string, instruction: string) => Promise<string>;
   approvals: ApprovalService;
+  /** R5：取消信号。工具在长操作（审批等待、命令执行）里应检查并尽快退出 */
+  signal?: AbortSignal;
 }
 
 export interface ToolDef {
@@ -52,19 +54,44 @@ export function rootsOf(ctx: ToolContext): string[] {
   return ctx.workspaceDirs && ctx.workspaceDirs.length > 0 ? ctx.workspaceDirs : [ctx.workspaceDir];
 }
 
-/** 把路径锁进任意一个工作目录，防逃逸 */
+/** S1：词法通过后再做真实路径校验，防符号链接把访问点指到工作区外 */
+function realContained(roots: string[], target: string): boolean {
+  const realOrSelf = (p: string): string => {
+    try { return fs.realpathSync(p); } catch { return p; }
+  };
+  let cur = target;
+  const tail: string[] = [];
+  for (let i = 0; i < 64; i++) {
+    if (fs.existsSync(cur)) {
+      const real = path.join(realOrSelf(cur), ...tail.reverse());
+      return roots.some((root) => {
+        const rr = realOrSelf(root);
+        const rel = path.relative(rr, real);
+        return !rel.startsWith('..') && !path.isAbsolute(rel);
+      });
+    }
+    tail.push(path.basename(cur));
+    const parent = path.dirname(cur);
+    if (parent === cur) return false;
+    cur = parent;
+  }
+  return false;
+}
+
+/** 把路径锁进任意一个工作目录，防逃逸（词法 + 真实路径双重校验） */
 export function safeResolve(roots: string[], rel: string): string | null {
   if (path.isAbsolute(rel)) {
+    const abs = path.resolve(rel);
     for (const root of roots) {
-      const r = path.relative(root, path.resolve(rel));
-      if (!r.startsWith('..') && !path.isAbsolute(r)) return path.resolve(rel);
+      const r = path.relative(root, abs);
+      if (!r.startsWith('..') && !path.isAbsolute(r)) return realContained(roots, abs) ? abs : null;
     }
     return null;
   }
   for (const root of roots) {
     const p = path.resolve(root, rel || '.');
     const r = path.relative(root, p);
-    if (!r.startsWith('..') && !path.isAbsolute(r)) return p;
+    if (!r.startsWith('..') && !path.isAbsolute(r)) return realContained(roots, p) ? p : null;
   }
   return null;
 }
@@ -315,7 +342,7 @@ const runCommand: ToolDef = {
       reason = `执行命令：${cmd}`;
     }
 
-    const decision = await ctx.approvals.request({
+    const decision = await ctx.approvals.request({ signal: ctx.signal,
       sessionId: ctx.sessionId, botName: ctx.bot.name, tool: 'run_command', args: { command: cmd }, risk, reason,
     });
     if (decision !== 'approved') {
@@ -376,7 +403,7 @@ const httpFetch: ToolDef = {
     if (ctx.planMode) return err('计划模式：先提交计划，用户批准后再抓取外网');
     if (!/^https?:$/.test(url.protocol)) return err('只允许 http/https');
     if (isBlockedHost(url.hostname)) return err('不允许访问内网/本机地址');
-    const decision = await ctx.approvals.request({
+    const decision = await ctx.approvals.request({ signal: ctx.signal,
       sessionId: ctx.sessionId, botName: ctx.bot.name, tool: 'http_fetch', args: { url: url.toString() },
       risk: 'medium', reason: `访问外部网址：${url.hostname}`,
     });
