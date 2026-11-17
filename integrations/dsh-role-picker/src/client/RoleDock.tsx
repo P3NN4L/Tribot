@@ -153,14 +153,11 @@ export function RoleDock(props: any) {
     setEnabled(next)
     writeEnabled(sessionId, next)
     if (next) {
-      // 打开 = 直接进入上次角色：草稿填 /tribot <角色> 并自动发送，零操作进入。
+      // 打开 = 把上次角色填进草稿（不自动发送，不触发模型回合/思考）。
+      // 胶囊本身已按会话记忆显示该角色；你在草稿后接着写任务，一次发送即可带角色+任务。
       const last = readRole(sessionId)
-      if (last) {
+      if (last && !(props?.input?.draft ?? '').startsWith('/tribot')) {
         props?.inputActions?.setDraft?.(applyRole(draft, last))
-        const submit = props?.inputActions?.submit
-        if (typeof submit === 'function') {
-          setTimeout(() => { try { submit() } catch {} }, 50)
-        }
       }
     }
     // 插件本体常驻（始终出现在插件列表），开关只隐藏选角 UI 并停用 # 触发。

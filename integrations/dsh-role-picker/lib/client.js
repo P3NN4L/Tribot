@@ -192,17 +192,8 @@ function RoleDock(props) {
     writeEnabled(sessionId, next);
     if (next) {
       const last = readRole(sessionId);
-      if (last) {
+      if (last && !(props?.input?.draft ?? "").startsWith("/tribot")) {
         props?.inputActions?.setDraft?.(applyRole(draft, last));
-        const submit = props?.inputActions?.submit;
-        if (typeof submit === "function") {
-          setTimeout(() => {
-            try {
-              submit();
-            } catch {
-            }
-          }, 50);
-        }
       }
     }
   };
